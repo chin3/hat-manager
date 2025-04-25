@@ -1,116 +1,212 @@
+# 🎩 Hat Manager – Multi-Agent AI Framework
 
+Hat Manager is a **modular AI agent orchestration framework** built on **Chainlit**, designed for flexible persona-based interactions with **per-agent memory**, **dynamic scheduling**, and a **custom UI** for editing agent behavior.
 
+---
 
-- Implemented Chat Logic, tried UI form field. Not effective in chainlit. 
-- Added a Chroma Store and DB to each hat based on the hat id
+## 🚀 Features
 
+- **🎩 Hats**: Define unique AI personas ("Hats") with specific instructions, tools, and models.
+- **🧠 Memory**: Each Hat stores past interactions in a local vector database (ChromaDB).
+- **🗕️ Scheduling**: Automatically switch Hats based on a time-based schedule.
+- **🛠️ Custom UI**: Intuitive React interface to edit Hat settings (model, tools, relationships).
+- **💡 LLM-Generated Hats**: Create new Hats dynamically from a description using Ollama LLM.
+- **⚡ Chainlit Integration**: Real-time, conversational AI with embedded UI elements.
 
+---
 
-NEXT STEPS:
-UI:
-    - Form Field freezes after first edit. Probably because of chain lit. Implement a seperate service for modifying the hat meta data or continue pasting the JSON. 
-    - Based off the backend. Create a simple calendar app that runs a specific agent at a specific time. Seperate Memory, Seperate instructions/context
+## 📂 Project Structure
 
-Memory Related:
-    Bug:
-        - Need to give each hat a unique id. I may need a databse or session for this unless you have any other reccomendations.
-    Feature:
-        - Add metadata tagging (timestamps, categories).
-        - Provide UI elements for manual memory management.
-        - Support importing/exporting memory snapshots.
+```
+├── app.py               # Main Chainlit app logic
+├── hat_manager.py       # Handles Hat storage, memory, LLM interaction
+├── hats/                # Folder storing individual Hat JSON files
+├── chromadb_data/       # Persistent vector memory storage for each Hat
+├── components/
+│   └── TestComponent.jsx  # React UI for editing Hats in real-time
+├── .gitignore
+├── README.md
+```
 
-Scalability:
-    - Add Async AI calling to OPenAI, use a local model, or use Azure AI Foundry. We can also modify the entire backend to use the azure suite. 
+---
 
+## 🔧 Setup Instructions
 
-Hat Memory System Documentation
+1. **Clone the Repo**
+   ```bash
+   git clone https://github.com/your-username/hat-manager.git
+   cd hat-manager
+   ```
 
-Overview
+2. **Install Python Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-The Hat Memory System integrates local vector databases (ChromaDB) into individual AI agents, known as "Hats". Each Hat maintains its own context and memory, allowing for personalized and contextually aware interactions. This memory system retrieves past interactions relevant to the user's input and injects them into AI prompts, enhancing the agent's responses.
+3. **Install Node Dependencies (for Custom UI)**
+   ```bash
+   cd components
+   npm install
+   ```
 
-How Memory Works
+4. **Start Ollama (Local LLM Backend)**
+   Ensure Ollama is running locally (default port `11434`):
+   ```bash
+   ollama serve
+   ```
 
-Per-Hat Vector Store:
+5. **Run Chainlit App**
+   ```bash
+   chainlit run app.py
+   ```
 
-Each Hat has a unique vector store implemented using ChromaDB.
+---
 
-Vector stores are managed using collections named after the hat_id.
+## ⚙️ Key Commands (Chat Interface)
 
-Memory Retrieval:
+| Command            | Description                                      |
+|--------------------|--------------------------------------------------|
+| `new blank`        | Create an empty Hat                              |
+| `new from prompt`  | Generate a Hat from a natural language prompt    |
+| `wear <hat_id>`    | Activate a specific Hat                          |
+| `edit <hat_id>`    | Edit a Hat via JSON                              |
+| `view memories`    | Show top memory entries for the current Hat      |
+| `clear memories`   | Clear all memories for the current Hat           |
+| `set schedule`     | Schedule a Hat to activate at a certain time     |
+| `view schedule`    | List all scheduled Hat switches                  |
+| `current hat`      | Show which Hat is currently active               |
+| `debug memories`   | Raw debug output of all stored memories          |
 
-When a user sends a message, the system queries the Hat's vector store for similar past interactions.
+---
 
-The top k relevant memories are retrieved using similarity search.
+## 🛠️ Editing Hats with Custom UI
 
-These memories are formatted and injected into the system prompt for OpenAI's language model.
+1. After wearing a Hat, click **Edit This Hat (UI)**.
+2. Modify the **name**, **model**, **instructions**, **tools**, and **relationships**.
+3. Save changes live via the embedded React interface.
 
-Memory Injection:
+---
 
-Retrieved memories are added as part of the system prompt:
+## 🧠 Memory System
 
-You are an AI agent with the '{hat_name}' persona.
+- ChromaDB stores interaction history **per Hat**.
+- Automatically fetches **contextual memories** when responding.
+- Memories can be **viewed**, **cleared**, or **searched**.
 
-Here are some relevant memories:
-- Memory 1
-- Memory 2
-- Memory 3
+---
 
-This provides context to the model, enhancing response relevance.
+## 🗕️ Scheduling Logic
 
-Memory Storage:
+- Schedule Hats to activate at specific **HH:MM** times.
+- Auto-switches Hats during conversation based on schedule.
+- **Future**: Support for **recurring schedules**, **calendar UI**, or **API sync**.
 
-After every user message and AI response, both are stored in the Hat's vector store.
+---
 
-Each memory is uniquely identified using a hash of its content.
+## 🔗 Future Enhancements
 
-Key Functions
+- Full **calendar widget** for managing schedules visually.
+- Integration with **Google Calendar** or **Notion Calendar**.
+- Advanced **multi-Hat team collaboration** flows.
+- Persistent **user-level settings** and **Hat sharing**.
 
-get_vector_db_for_hat(hat_id): Retrieves or creates a ChromaDB collection for the given Hat.
+---
 
-add_memory_to_hat(hat_id, memory_text): Adds a memory entry to the Hat's vector DB.
+## 📜 License
 
-search_memory(hat_id, query, k=3): Retrieves top k similar memories from the Hat's vector DB.
+MIT License – free for personal and commercial use.
 
-clear_memory(hat_id): Clears all memories from the Hat's vector DB.
+---
 
-User Commands
+## 🙌 Credits
 
-view memories:
+- Built with [Chainlit](https://www.chainlit.io/), [ChromaDB](https://www.trychroma.com/), and [Ollama](https://ollama.com/).
+- UI powered by **React + Tailwind** via **Chainlit Custom Components**.
 
-Displays the top 5 memories for the current Hat.
+---
 
-Uses search_memory(hat_id, "", k=5) to fetch a sample.
+# 📝 NOTES:
 
-clear memories:
+- Implemented Chat Logic, tried UI form field. Not fully effective in Chainlit.
+- Added a Chroma Store and DB to each Hat based on the `hat_id`.
 
-Clears all stored memories for the current Hat.
+---
 
-Uses clear_memory(hat_id).
+# 📈 NEXT STEPS:
 
-Persistence
+### **UI:**
+- Form field freezes after first edit (Chainlit issue). Consider a separate service for modifying Hat metadata or continue JSON pasting.
+- Build a simple calendar app to run specific agents at specific times with separate memory and context.
 
-ChromaDB uses a persistent directory (./chromadb_data) to ensure that memories are stored across sessions.
+### **Memory Related:**
+- **Bug**: Each Hat needs a **unique ID**. Consider a DB or session strategy.
+- **Feature**:
+  - Add **metadata tagging** (timestamps, categories).
+  - Provide UI for **manual memory management**.
+  - Support **import/export** of memory snapshots.
 
-Example Flow
+### **Scalability:**
+- Add **Async AI calling** to OpenAI or local models.
+- Explore **Azure AI Foundry** or full backend migration to Azure.
 
-User sends a message: "Tell me about AI in healthcare."
+---
 
-System queries relevant memories from the Hat's vector DB.
+# 🧠 Hat Memory System Documentation
 
-Injects top 3 relevant memories into the OpenAI prompt.
+### **Overview**
+The Hat Memory System integrates local vector databases (ChromaDB) into individual AI agents, known as "Hats". Each Hat maintains its own context and memory, allowing for personalized and contextually aware interactions.
 
-AI responds.
+### **How Memory Works**
 
-Both the user message and AI response are stored back into the vector DB for future use.
+- **Per-Hat Vector Store**:
+  - Each Hat has a unique vector store using ChromaDB.
+  - Collections named after `hat_id`.
 
-Future Enhancements
+- **Memory Retrieval**:
+  - Queries Hat’s vector store for similar past interactions.
+  - Top **k** relevant memories retrieved and injected into system prompt.
 
-Add metadata tagging (timestamps, categories).
+- **Memory Injection**:
+  ```
+  You are an AI agent with the '{hat_name}' persona.
 
-Provide UI elements for manual memory management.
+  Here are some relevant memories:
+  - Memory 1
+  - Memory 2
+  - Memory 3
+  ```
 
-Support importing/exporting memory snapshots.
+- **Memory Storage**:
+  - After every message, both **user input** and **AI response** are stored.
 
-This memory system enables personalized and evolving AI interactions by ensuring each Hat retains and utilizes past context intelligently.
+### **Key Functions**
+- `get_vector_db_for_hat(hat_id)`
+- `add_memory_to_hat(hat_id, memory_text)`
+- `search_memory(hat_id, query, k=3)`
+- `clear_memory(hat_id)`
+
+### **User Commands**
+- `view memories`
+- `clear memories`
+
+### **Persistence**
+- ChromaDB uses `./chromadb_data` for session persistence.
+
+---
+
+### **Example Flow**
+1. User sends: **"Tell me about AI in healthcare."**
+2. System queries past memories.
+3. Injects top 3 into the prompt.
+4. AI responds.
+5. Both message & response stored for future queries.
+
+---
+
+### **Future Enhancements**
+- Add **metadata tagging**.
+- Provide UI for manual memory control.
+- Support **memory snapshot import/export**.
+
+> This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
 

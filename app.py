@@ -11,8 +11,12 @@ from hat_manager import get_vector_db_for_hat, search_memory, add_memory_to_hat,
 
 import openai
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 # Set your OpenAI API key
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Ensure hat_manager.py exists and provides these functions/objects
 # It should handle file operations, LLM calls, etc.
