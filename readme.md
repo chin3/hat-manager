@@ -43,13 +43,13 @@ Hat Manager is a **modular AI agent orchestration framework** built on **Chainli
    pip install -r requirements.txt
    ```
 
-3. **Install Node Dependencies (for Custom UI)**
-   ```bash
-   cd components
-   npm install
+3. **If using Open AI API**
+   Add your open API key in your .env as follows
+   ```
+   OPENAI_API_KEY=sk-YOUR_KEY_HERE
    ```
 
-4. **Start Ollama (Local LLM Backend)**
+4. **If using Ollama Start Ollama (Local LLM Backend)**
    Ensure Ollama is running locally (default port `11434`):
    ```bash
    ollama serve
