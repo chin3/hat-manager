@@ -88,11 +88,22 @@ chainlit run app.py
 
 ---
 
-## 📸 Screenshots (To Add)
-- Sidebar showing Hats and Teams
-- Team Flow conversation
-- Hat Editor UI
-- Memory View (Top Memories)
+## 📸 Screenshots & GIFs
+
+1. **🖥️ App UI Overview**  
+   > _Screenshot:_ Chainlit app with Sidebar, Hat Selector, Chat Interface.
+
+2. **🎩 Hat Editor (UI)**  
+   > _GIF or Screenshot:_ Creating/editing a Hat with the form interface.
+
+3. **👥 Team Flow in Action**  
+   > _GIF:_ Multi-Hat team running with Summarizer → Critic → Approval loop.
+
+4. **🧠 Memory View**  
+   > _Screenshot:_ Top retrieved memories for a Hat.
+
+5. **📊 Flow Visualizer (Planned)**  
+   > _Placeholder for Future:_ Visual representation of team flow.
 
 ---
 
@@ -137,6 +148,7 @@ run team research_team
 - [ ] **Flow Visualizer** for graphical team composition.
 - [ ] **Tool Integration**: Add custom tool-enabled agents.
 - [ ] **AutoGen / Microsoft AI Foundry** compatibility layers.
+- [ ] **Microsoft Copilot SDK** integration for enhanced workflow.
 
 ---
 
@@ -148,10 +160,6 @@ run team research_team
 
 ## 📝 License
 MIT License. Free to use, modify, and extend.
-
----
-
-You can now copy this cleanly for your README.md file! Let me know if you'd like to save it as a file next.
 
 ---
 
@@ -172,7 +180,7 @@ You can now copy this cleanly for your README.md file! Let me know if you'd like
 - Add **Async AI calling** to OpenAI or local models.
 - Explore **Azure AI Foundry** or full backend migration to Azure.
 
----
+------------------------------------------------------------------------------------------ 
 
 # 🧠 Hat Memory System Documentation
 
@@ -232,28 +240,3 @@ The Hat Memory System integrates local vector databases (ChromaDB) into individu
 - Support **memory snapshot import/export**.
 
 > This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
-
-
-Multi Agent Orchestration
-{
-    "hat_id": "fact_checker",
-    "name": "Research Summary Fact-Checker",
-    "model": "gpt-4",
-    "role": "tool",
-    "instructions": "Verify the accuracy of research summaries by cross-checking against credible sources.",
-    "tools": [
-      "fact_checker"
-    ], 
-    "relationships": [], // TODO: Implement relationship-based agent handoffs (e.g., this Hat works directly with summarizer Hat)
-    "team_id": "team_1", // TODO: Use team_id to coordinate multi-agent flows, e.g., filter agents by team during execution
-    "flow_order": 3, // TODO: Enforce this execution order in your multi-agent pipeline (planner → summarizer → fact_checker)
-    "qa_loop": false, // TODO: If true, allow this Hat to loop back for QA/fix suggestions before finalizing output
-    "critics": [], // TODO: Add IDs of critic Hats that should review this Hat's output (auto-trigger feedback loops)
-    "active": true, // TODO: Use this to toggle whether a Hat participates in flows without deleting the file
-    "memory_tags": [
-      "summary",
-      "fact_checking"
-    ], // TODO: Tag stored memories with these categories for better search/filtering during memory retrieval
-    "retry_limit": 2, // TODO: After failed outputs, allow up to 2 retries (based on critic feedback or validation rules)
-    "description": "Fact-checks research summaries against credible sources."
-  }
