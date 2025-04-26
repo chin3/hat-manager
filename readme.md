@@ -317,6 +317,3 @@ Here’s a concise step-by-step **guide** on how you integrated the **Critic Age
   - Enabling **`qa_loop`**
   - Adding the **Critic’s ID** to **`critics`**
 
----
-
-Let me know if you want to automate critic detection or make it more dynamic next! 🔄💡
