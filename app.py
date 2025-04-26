@@ -7,7 +7,7 @@ import re
 
 from datetime import datetime
 
-from hat_manager import get_vector_db_for_hat, search_memory, add_memory_to_hat, clear_memory
+from hat_manager import get_vector_db_for_hat, list_hats_by_team, search_memory, add_memory_to_hat, clear_memory
 
 import openai
 
@@ -58,15 +58,16 @@ async def main():
 # --- UI Update Functions ---
 
 async def show_hat_sidebar():
-    """
-    Displays available Hats and commands in the sidebar.
-    """
-    hats = list_hats()
+    hat_ids = list_hats()
+    hats = [load_hat(hat_id) for hat_id in hat_ids]  # Load full Hat data
+
+    team_ids = list(set([hat.get("team_id") for hat in hats if hat.get("team_id")]))
+    
     elements = [Text(content="### 🎩 Hats")]
 
-    if hats:
-        for hat in hats:
-            elements.append(Text(content=f"- `wear {hat}`"))
+    if hat_ids:
+        for hat_id in hat_ids:
+            elements.append(Text(content=f"- `wear {hat_id}`"))
     else:
         elements.append(Text(content="_(No hats found yet)_"))
 
@@ -75,23 +76,42 @@ async def show_hat_sidebar():
         Text(content="### ➕ Create"),
         Text(content="- `new blank` — Empty Hat"),
         Text(content="- `new from prompt` — Describe"),
+        Text(content="- `create team` — Auto-build a team"),
         Text(content="---"),
-        Text(content="### ✏️ Edit Active Hat"),
-        Text(content="- `edit <hat_id>` — Start JSON edit"),
-        Text(content="- *Use button after wearing*"),
+        Text(content="### 👥 Teams"),
+        Text(content="- `run team <team_id>` — Run multi-Hat flow"),
+        Text(content="- `view team <team_id>` — Show team Hats"),
+        Text(content="- `save team` — Save proposed team"),
+        Text(content="- `show team json` — View team JSON"),
         Text(content="---"),
         Text(content="### 🧠 Memory"),
         Text(content="- `view memories` — Show top memories"),
         Text(content="- `clear memories` — Delete all memories"),
+        Text(content="- `export memories <hat_id>` — Export JSON"),
         Text(content="- `debug memories` — Raw memory debug"),
         Text(content="---"),
         Text(content="### 🕒 Scheduling"),
         Text(content="- `set schedule` — Schedule Hat switching"),
-        Text(content="- `view schedule` — View all schedules"),
+        Text(content="- `view schedule` — View schedules"),
         Text(content="- `current hat` — Show active Hat"),
         Text(content="---"),
-        Text(content="### ℹ️ Other"),
-        Text(content="- `help` — Show commands"),
+        Text(content="### ✅ Active Teams")
+    ]
+
+    for team_id in team_ids:
+        team_hats = list_hats_by_team(team_id)
+        hat_names = ", ".join([hat.get("name", "Unnamed") for hat in team_hats])
+        elements.append(Text(content=f"- `{team_id}`: {hat_names}"))
+
+    elements += [
+        Text(content="---"),
+        Text(content="### 🔥 TODOs / Next Steps"),
+        Text(content="- `user approval` after Critic — Await 'approve'/'retry' ✔️"),
+        Text(content="- Visual polish for logs (emojis/dividers) ✔️"),
+        Text(content="- `import memories` command — #TODO"),
+        Text(content="- Add `run again` / `create new team` buttons — #TODO"),
+        Text(content="- QA edge fallback: prompt user after retry limit — #TODO"),
+        Text(content="- Flow visualizer: plan graphical flow editor — #TODO"),
     ]
 
     await cl.ElementSidebar.set_elements(elements)
@@ -227,6 +247,113 @@ async def handle_hat_selection(action: cl.Action):
 
 # --- Core Logic Functions ---
 
+#Team building
+async def run_team_flow(team_id, input_text):
+    team_hats = list_hats_by_team(team_id)
+    current_input = input_text
+    conversation_log = []
+    retry_counts = {}
+
+    i = 0
+    while i < len(team_hats):
+        hat = team_hats[i]
+        hat_name = hat.get('name')
+        hat_id = hat.get('hat_id')
+        instructions = hat.get('instructions')
+        qa_loop = hat.get('qa_loop', False)
+        retry_limit = hat.get('retry_limit', 0)
+
+        response_text = generate_openai_response(current_input, hat)
+
+        # Save memories
+        add_memory_to_hat(hat_id, current_input, role="user")
+        add_memory_to_hat(hat_id, response_text, role="bot")
+
+        await cl.Message(content=f"🧢 {hat_name} responded:\n{response_text}").send()
+
+        conversation_log.append({
+            "hat_name": hat_name,
+            "hat_id": hat_id,
+            "input": current_input,
+            "output": response_text
+        })
+
+        # --- QA Loop Check ---
+        if qa_loop:
+            if "#REVISION_REQUIRED" in response_text:
+                retry_target_index = len(conversation_log) - 2  # Retry previous Hat
+                retry_target = conversation_log[retry_target_index] if retry_target_index >= 0 else None
+
+                if retry_target:
+                    retry_counts[retry_target['hat_id']] = retry_counts.get(retry_target['hat_id'], 0) + 1
+
+                    if retry_counts[retry_target['hat_id']] <= retry_limit:
+                        await cl.Message(content=f"🔁 Critic requested revision. Retrying {retry_target['hat_name']}... (Attempt {retry_counts[retry_target['hat_id']]}/{retry_limit})").send()
+
+                        # Re-run only the previous agent (e.g., Summarizer)
+                        prev_hat = next(h for h in team_hats if h['hat_id'] == retry_target['hat_id'])
+                        retry_response = generate_openai_response(retry_target['input'], prev_hat)
+
+                        add_memory_to_hat(prev_hat['hat_id'], retry_target['input'], role="user")
+                        add_memory_to_hat(prev_hat['hat_id'], retry_response, role="bot")
+
+                        await cl.Message(content=f"🧢 {prev_hat['name']} retry responded:\n{retry_response}").send()
+
+                        # Immediately re-run Critic (this hat) again with new Summarizer output
+                        critic_response = generate_openai_response(retry_response, hat)
+
+                        add_memory_to_hat(hat['hat_id'], retry_response, role="user")
+                        add_memory_to_hat(hat['hat_id'], critic_response, role="bot")
+
+                        await cl.Message(content=f"🧢 {hat_name} re-reviewed:\n{critic_response}").send()
+
+                        # Handle approval/revision after retry
+                        if "#REVISION_REQUIRED" in critic_response:
+                            continue  # Go back and retry again if needed
+
+                        elif "#APPROVED" in critic_response:
+                            await cl.Message(content="✅ Critic approved the output after retry!").send()
+
+                        else:
+                            await cl.Message(content="⚠️ Critic did not provide a valid tag. Manual review needed.").send()
+
+                        # Ask user for final approval
+                        await cl.Message(content="🧑‍⚖️ Approve or Retry? Type `approve` or `retry`.").send()
+                        cl.user_session.set("awaiting_user_approval", True)
+                        cl.user_session.set("pending_critique_input", retry_response)
+                        cl.user_session.set("pending_team_id", team_id)
+                        return
+
+                    else:
+                        await cl.Message(content="⚠️ Retry limit reached. Proceeding with available results.").send()
+
+                else:
+                    await cl.Message(content="⚠️ No valid previous Hat to retry.").send()
+
+            elif "#APPROVED" in response_text:
+                await cl.Message(content="✅ Critic approved the output!").send()
+
+            else:
+                await cl.Message(content="⚠️ Critic did not provide a valid tag. Manual review needed.").send()
+
+            # User approval after Critic (whether tagged or not)
+            await cl.Message(content="🧑‍⚖️ Approve or Retry? Type `approve` or `retry`.").send()
+            cl.user_session.set("awaiting_user_approval", True)
+            cl.user_session.set("pending_critique_input", current_input)
+            cl.user_session.set("pending_team_id", team_id)
+            return
+
+        current_input = response_text  # Pass to next Hat
+        i += 1
+
+    # 📝 Full Log
+    log_text = "\n\n".join([
+        f"🧢 {entry['hat_name']}:\nInput: {entry['input']}\nOutput: {entry['output']}"
+        for entry in conversation_log
+    ])
+    await cl.Message(content=f"📜 **Full Conversation Log:**\n\n{log_text}").send()
+    await cl.Message(content="✅ Team flow complete!").send()
+    
 async def wear_hat(hat_id: str):
     """Loads a hat, sets it as active in the session, and informs the user."""
     try:
@@ -356,24 +483,40 @@ async def save_edited_json(message: cl.Message, hat_id_to_edit: str):
         # cl.user_session.set("awaiting_json_paste", False)
 
 
-def generate_openai_response(prompt: str, hat_name: str, hat_id: str):
+def generate_openai_response(prompt: str, hat: dict):
+    """
+    Generates an AI response using the Hat schema for context.
+    Supports instructions, tools, role, and memory injection.
+    """
+
+    hat_name = hat.get('name', 'Unnamed Agent')
+    hat_id = hat.get('hat_id')
+    instructions = hat.get('instructions', '')
+    role = hat.get('role', 'agent')
+    tools = ", ".join(hat.get('tools', [])) or "none"
+
+    # 🧠 Fetch relevant memories
     memory_context = ""
     relevant_memories = search_memory(hat_id, prompt, k=3)
     if relevant_memories:
         formatted = "\n".join([
-            f"{meta['role'].capitalize()} ({meta['timestamp']}): {doc}"
-            for doc, meta in relevant_memories
+            f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
+            for doc, meta in relevant_memories if meta and doc
         ])
-        memory_context = f"\n\nHere are some relevant memories:\n{formatted}"
-    else:
-        memory_context = "\n\nNo relevant memories found for this prompt."
+        memory_context = f"\n\nRelevant Memories:\n{formatted}"
 
-    system_prompt = f"You are an AI agent with the '{hat_name}' persona."
-    if memory_context:
-        system_prompt += memory_context
+    # 📝 System Prompt Enriched
+    system_prompt = f"""
+You are a {role} agent named '{hat_name}'.
+Your tools: {tools}.
+Instructions: {instructions}.
+{memory_context if memory_context else ''}
+""".strip()
+
+    # 🧠 Optional: Print or log system_prompt if needed for debugging.
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model=hat.get("model", "gpt-3.5-turbo"),
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
@@ -381,7 +524,64 @@ def generate_openai_response(prompt: str, hat_name: str, hat_id: str):
         temperature=0.7,
         max_tokens=1000
     )
+
+    # 🛑 Return full response for better control later
     return response.choices[0].message.content
+
+def generate_team_from_goal(goal):
+    system_prompt = """
+    You are an AI that creates AI agent teams for complex tasks. Each agent (Hat) has a unique role.
+    
+    Based on the goal, define a team with:
+    - hat_id
+    - name
+    - role (planner, summarizer, critic, tool_agent)
+    - model (gpt-3.5 or gpt-4)
+    - instructions
+    - tools (list)
+    - flow_order (number)
+    - qa_loop (true/false)
+    - team_id ("auto_team")
+
+    Output valid JSON. Example:
+    [
+      {
+        "hat_id": "planner",
+        "name": "Planning Agent",
+        "role": "planner",
+        "model": "gpt-3.5",
+        "instructions": "Break tasks into steps and assign to the summarizer.",
+        "tools": [],
+        "flow_order": 1,
+        "qa_loop": false,
+        "team_id": "auto_team"
+      },
+      ...
+    ]
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"My goal: {goal}"}
+        ],
+        temperature=0.5,
+        max_tokens=1200
+    )
+    
+    result_text = response.choices[0].message.content
+
+    try:
+        # Extract JSON
+        match = re.search(r"\[.*\]", result_text, re.DOTALL)
+        if match:
+            return json.loads(match.group(0))
+        else:
+            raise ValueError("No valid JSON team found in response.")
+    except Exception as e:
+        print("Error parsing team:", e)
+        return []
 
 @cl.on_message
 async def handle_message(message: cl.Message):
@@ -393,6 +593,21 @@ async def handle_message(message: cl.Message):
     
     content = message.content.strip()
     content_lower = content.lower()
+    
+    # --- User Approval Handling ---
+    if cl.user_session.get("awaiting_user_approval"):
+        cl.user_session.set("awaiting_user_approval", False)
+        if content_lower == "retry":
+            await cl.Message(content="🔄 User requested retry. Re-running team...").send()
+            await run_team_flow(cl.user_session.get("pending_team_id"), cl.user_session.get("pending_critique_input"))
+            return
+        elif content_lower == "approve":
+            await cl.Message(content="✅ Output approved by user! Team flow complete.").send()
+            return
+        else:
+            await cl.Message(content="❓ Invalid response. Please type `approve` or `retry`.").send()
+            cl.user_session.set("awaiting_user_approval", True)
+            return
 
     # Get current state flags
     editing_hat_id = cl.user_session.get("editing_hat_id")
@@ -485,6 +700,31 @@ async def handle_message(message: cl.Message):
             await cl.Message(content=f"📅 Your current Hat schedule:\n{formatted}").send()
         else:
             await cl.Message(content="📅 No Hats scheduled yet.").send()
+    elif content_lower.startswith("run team "):
+        team_id = content.split(" ", 2)[2].strip()
+        if team_id:
+            await cl.Message(content=f"🚀 Running team flow for `{team_id}`...").send()
+            await run_team_flow(team_id, "Start a research summary on AI in healthcare")
+        else:
+            await cl.Message(content="❌ Usage: `run team <team_id>`").send()
+        return
+    elif content_lower.startswith("view team "):
+        team_id = content.split(" ", 2)[2].strip()
+        if not team_id:
+            await cl.Message(content="❌ Usage: `view team <team_id>`").send()
+            return
+
+        team_hats = list_hats_by_team(team_id)
+        if not team_hats:
+            await cl.Message(content=f"❌ No Hats found for team `{team_id}`.").send()
+            return
+
+        team_summary = "\n".join([
+            f"- `{hat['name']}` (`{hat['hat_id']}`) → Role: `{hat.get('role', 'N/A')}`, Flow Order: {hat.get('flow_order', 'N/A')}"
+            for hat in team_hats
+        ])
+        await cl.Message(content=f"👥 Team `{team_id}` Hats:\n{team_summary}").send()
+        return
     elif cl.user_session.get("awaiting_schedule_time"):
         cl.user_session.set("awaiting_schedule_time", False)
         schedule_time = content.strip()
@@ -534,7 +774,57 @@ async def handle_message(message: cl.Message):
             await cl.Message(content=f"🎩 You are currently wearing: `{current_hat.get('name')}` (ID: `{current_hat.get('hat_id')}`)").send()
         else:
             await cl.Message(content="❌ No Hat is currently active.").send()
-    # --- Fallback / General Chat ---
+    elif content_lower.startswith("create team"):
+        await cl.Message(content="🎯 What is your goal? Describe what you'd like the AI team to accomplish.").send()
+        cl.user_session.set("awaiting_team_goal", True)
+        return
+    elif cl.user_session.get("awaiting_team_goal"):
+        cl.user_session.set("awaiting_team_goal", False)
+        goal_description = content.strip()
+        await cl.Message(content="🤖 Building your AI team based on your goal...").send()
+
+        # Call the Orchestrator to propose a team
+        team_proposal = generate_team_from_goal(goal_description)
+        
+        # Save it in session for review/edit
+        cl.user_session.set("proposed_team", team_proposal)
+
+        # Present the proposal
+        team_summary = "\n".join([f"- {hat['name']} ({hat['hat_id']}) → Role: {hat.get('role', 'N/A')}" for hat in team_proposal])
+        await cl.Message(content=f"📋 Proposed Team:\n{team_summary}\n\nApprove with `save team`, or modify manually.").send()
+        return
+    elif content_lower == "save team":
+        proposed_team = cl.user_session.get("proposed_team")
+        if not proposed_team:
+            await cl.Message(content="❌ No team proposal found. Use `create team` first.").send()
+            return
+        
+        # Save each hat
+        for hat in proposed_team:
+            save_hat(hat["hat_id"], hat)
+        
+        await cl.Message(content="✅ Team saved! Use `wear <hat_id>` to activate a Hat, or `view schedule` to assign times.").send()
+        await show_hat_sidebar()
+        await show_hat_selector()
+        return
+    elif content_lower == "show team json":
+        proposed_team = cl.user_session.get("proposed_team")
+        if proposed_team:
+            await cl.Message(content=f"```json\n{json.dumps(proposed_team, indent=2)}\n```").send()
+        else:
+            await cl.Message(content="No team proposal to show.").send()
+    elif content_lower == "help":
+        await cl.Message(content=(
+            "**Available Commands:**\n"
+            "- `wear <hat_id>`: Load and activate a hat.\n"
+            "- `new blank`: Create an empty hat.\n"
+            "- `new from prompt`: Create a hat by describing it.\n"
+            "- `edit <hat_id>`: Start editing by pasting JSON for the specified hat.\n"
+            "- `run team <team_id>`: Run a full flow of Hats based on team configuration.\n"
+            "- `view memories`, `clear memories`, `view schedule`, etc."
+        )).send()
+
+        # --- Fallback / General Chat ---
     else:
         current_hat = cl.user_session.get("current_hat")
         if current_hat:
@@ -549,7 +839,7 @@ async def handle_message(message: cl.Message):
                 await cl.Message(content=f"🕒 Auto-switched to Hat `{scheduled_hat}` based on your schedule!").send()
 
 
-            response_text = generate_openai_response(message.content, current_hat.get('name'), current_hat.get('hat_id'))
+            response_text = generate_openai_response(message.content, current_hat)
             # Save both user message and bot response into memory
             add_memory_to_hat(current_hat.get('hat_id'), message.content, role="user")
             add_memory_to_hat(current_hat.get('hat_id'), response_text, role="bot")

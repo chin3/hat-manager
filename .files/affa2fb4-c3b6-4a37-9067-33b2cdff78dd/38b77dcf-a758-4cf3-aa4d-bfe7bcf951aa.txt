@@ -1,0 +1,1 @@
+- `run team <team_id>` — Execute multi-Hat flow
