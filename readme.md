@@ -1,134 +1,161 @@
-# 🎩 Hat Manager – Multi-Agent AI Framework
-
-Hat Manager is a **modular AI agent orchestration framework** built on **Chainlit**, designed for flexible persona-based interactions with **per-agent memory**, **dynamic scheduling**, and a **custom UI** for editing agent behavior.
+Got it! Here's the **README.md** content cleanly formatted for direct copy-paste, **without spilling out of the markdown block**:
 
 ---
 
-## 🚀 Features
+# 🎩 Hat Manager — Multi-Agent AI Orchestration Framework
 
-- **🎩 Hats**: Define unique AI personas ("Hats") with specific instructions, tools, and models.
-- **🧠 Memory**: Each Hat stores past interactions in a local vector database (ChromaDB).
-- **🗕️ Scheduling**: Automatically switch Hats based on a time-based schedule.
-- **🛠️ Custom UI**: Intuitive React interface to edit Hat settings (model, tools, relationships).
-- **💡 LLM-Generated Hats**: Create new Hats dynamically from a description using Ollama LLM.
-- **⚡ Chainlit Integration**: Real-time, conversational AI with embedded UI elements.
+> **Microsoft AI Agents Hackathon Submission**  
+> This project was created as a submission for the [Microsoft AI Agents Hackathon](https://microsoft.github.io/AI_Agents_Hackathon). It demonstrates a modular, human-in-the-loop AI agent system designed for research, summarization, and interactive multi-agent workflows.
 
 ---
 
-## 📂 Project Structure
+## 🚀 Overview
 
+**Hat Manager** is a local-first AI orchestration framework where each "Hat" is an independent AI agent with:
+- A unique identity (`hat_id`, name, role, model, instructions)
+- Its own vector memory (text + context search)
+- Custom tools (integrations/extensions)
+- Flow logic (for chaining in multi-agent teams)
+
+Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrated reasoning tasks.
+
+---
+
+## 🎯 Key Features
+- **Multi-Agent Team Flow**: Chain Hats into teams like `Planner → Summarizer → Critic`.
+- **QA Loop with Critic Agent**: Auto-retries based on Critic feedback (`#REVISION_REQUIRED` / `#APPROVED`).
+- **Human-in-the-Loop Approval**: After Critic, the user decides to approve or retry output manually.
+- **Dynamic Hat Management**:
+  - Create Hats from prompts or blank templates.
+  - Edit Hats via UI form or JSON.
+- **Per-Hat Memory**:
+  - Vector-based memory retrieval and context injection.
+  - Commands: `view memories`, `clear memories`, `export memories <hat_id>`.
+- **UI Enhancements (Chainlit)**:
+  - Sidebar with active Hats, Teams, and TODO roadmap.
+  - Buttons for quick actions: Wear, Edit, Schedule.
+
+---
+
+## 🛠️ Tech Stack
+- **Chainlit**: Frontend for AI interactions.
+- **OpenAI API**: LLM backend (supports `gpt-3.5` and `gpt-4`).
+- **ChromaDB / Vector Store**: Per-Hat context retrieval.
+- **Python**: Backend orchestration logic.
+- **Ollama-Ready**: Future-ready for local LLMs.
+
+---
+
+## 🧑‍💻 Usage Guide
+
+### 1. 🔧 Setup
+```bash
+git clone https://github.com/yourname/hat-manager.git
+cd hat-manager
+pip install -r requirements.txt
 ```
-├── app.py               # Main Chainlit app logic
-├── hat_manager.py       # Handles Hat storage, memory, LLM interaction
-├── hats/                # Folder storing individual Hat JSON files
-├── chromadb_data/       # Persistent vector memory storage for each Hat
-├── components/
-│   └── TestComponent.jsx  # React UI for editing Hats in real-time
-├── .gitignore
-├── README.md
+- Set your **OpenAI API Key** in `.env`:
+```
+OPENAI_API_KEY=sk-xxxxxxxxxxxx
 ```
 
----
-
-## 🔧 Setup Instructions
-
-1. **Clone the Repo**
-   ```bash
-   git clone https://github.com/your-username/hat-manager.git
-   cd hat-manager
-   ```
-
-2. **Install Python Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **If using Open AI API**
-   Add your open API key in your .env as follows
-   ```
-   OPENAI_API_KEY=sk-YOUR_KEY_HERE
-   ```
-
-4. **If using Ollama Start Ollama (Local LLM Backend)**
-   Ensure Ollama is running locally (default port `11434`):
-   ```bash
-   ollama serve
-   ```
-
-5. **Run Chainlit App**
-   ```bash
-   chainlit run app.py
-   ```
+### 2. ▶️ Run the App
+```bash
+chainlit run app.py
+```
+- Visit [http://localhost:8000](http://localhost:8000)
+- Start by typing `help` or using sidebar buttons.
 
 ---
 
-## ⚙️ Key Commands (Chat Interface)
+## 🧠 Core Concepts
 
-| Command            | Description                                      |
-|--------------------|--------------------------------------------------|
-| `new blank`        | Create an empty Hat                              |
-| `new from prompt`  | Generate a Hat from a natural language prompt    |
-| `wear <hat_id>`    | Activate a specific Hat                          |
-| `edit <hat_id>`    | Edit a Hat via JSON                              |
-| `view memories`    | Show top memory entries for the current Hat      |
-| `clear memories`   | Clear all memories for the current Hat           |
-| `set schedule`     | Schedule a Hat to activate at a certain time     |
-| `view schedule`    | List all scheduled Hat switches                  |
-| `current hat`      | Show which Hat is currently active               |
-| `debug memories`   | Raw debug output of all stored memories          |
+### 🎩 **Hats**:
+- Represent AI agents with identity + memory.
+- Editable JSON or UI form.
+- Switch using: `wear <hat_id>`
 
----
+### 👥 **Teams**:
+- Chains of Hats working in sequence.
+- Auto-generated via: `create team`
+- Run with: `run team <team_id>`
 
-## 🛠️ Editing Hats with Custom UI
+### 🔁 **QA Loop**:
+- Critic agent can trigger retry of previous Hat.
+- Retry limit controlled per Hat.
 
-1. After wearing a Hat, click **Edit This Hat (UI)**.
-2. Modify the **name**, **model**, **instructions**, **tools**, and **relationships**.
-3. Save changes live via the embedded React interface.
-
----
-
-## 🧠 Memory System
-
-- ChromaDB stores interaction history **per Hat**.
-- Automatically fetches **contextual memories** when responding.
-- Memories can be **viewed**, **cleared**, or **searched**.
+### 🧑‍⚖️ **User Approval**:
+- After Critic, user decides:
+  ```
+  Approve or Retry? Type approve or retry.
+  ```
 
 ---
 
-## 🗕️ Scheduling Logic
-
-- Schedule Hats to activate at specific **HH:MM** times.
-- Auto-switches Hats during conversation based on schedule.
-- **Future**: Support for **recurring schedules**, **calendar UI**, or **API sync**.
-
----
-
-## 🔗 Future Enhancements
-
-- Full **calendar widget** for managing schedules visually.
-- Integration with **Google Calendar** or **Notion Calendar**.
-- Advanced **multi-Hat team collaboration** flows.
-- Persistent **user-level settings** and **Hat sharing**.
+## 📸 Screenshots (To Add)
+- Sidebar showing Hats and Teams
+- Team Flow conversation
+- Hat Editor UI
+- Memory View (Top Memories)
 
 ---
 
-## 📜 License
-
-MIT License – free for personal and commercial use.
+## 📋 Example Team Flow
+```bash
+run team research_team
+```
+1. **Summarizing Agent**:
+   - Generates initial summary based on input.
+2. **Critic Agent**:
+   - Reviews summary.
+   - Tags as `#APPROVED` or `#REVISION_REQUIRED`.
+3. **User**:
+   - Decides to approve or retry manually.
 
 ---
 
-## 🙌 Credits
+## 📦 Available Commands
 
-- Built with [Chainlit](https://www.chainlit.io/), [ChromaDB](https://www.trychroma.com/), and [Ollama](https://ollama.com/).
-- UI powered by **React + Tailwind** via **Chainlit Custom Components**.
+| Command                   | Description                                      |
+|---------------------------|--------------------------------------------------|
+| `wear <hat_id>`           | Load and activate a Hat                         |
+| `new blank`               | Create a new empty Hat                          |
+| `new from prompt`         | Generate Hat from a description                 |
+| `edit <hat_id>`           | Paste updated JSON for a Hat                    |
+| `create team`             | Generate a multi-Hat team from a goal           |
+| `run team <team_id>`      | Run a multi-agent team flow                     |
+| `view memories`           | View recent memories for active Hat             |
+| `clear memories`          | Delete all memories for active Hat              |
+| `export memories <hat_id>`| Export full memory as JSON                      |
+| `set schedule`            | Schedule Hat switching by time                  |
+| `view schedule`           | View scheduled Hat switches                     |
+| `current hat`             | Show current active Hat                         |
+| `save team`               | Save proposed team to disk                      |
+| `show team json`          | View raw JSON for proposed team                 |
 
 ---
 
-# 📝 NOTES:
+## 🛣️ Future TODOs
+- [ ] **Import Memories** from JSON or text files.
+- [ ] **Run Again / Create New Team** buttons post-flow.
+- [ ] **Flow Visualizer** for graphical team composition.
+- [ ] **Tool Integration**: Add custom tool-enabled agents.
+- [ ] **AutoGen / Microsoft AI Foundry** compatibility layers.
 
-- Implemented Chat Logic, tried UI form field. Not fully effective in Chainlit.
-- Added a Chroma Store and DB to each Hat based on the `hat_id`.
+---
+
+## 🙌 Acknowledgments
+- Inspired by the **Microsoft AI Agents Hackathon**.
+- Powered by **Chainlit**, **OpenAI**, and **Ollama**.
+
+---
+
+## 📝 License
+MIT License. Free to use, modify, and extend.
+
+---
+
+You can now copy this cleanly for your README.md file! Let me know if you'd like to save it as a file next.
 
 ---
 
@@ -210,3 +237,27 @@ The Hat Memory System integrates local vector databases (ChromaDB) into individu
 
 > This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
 
+
+Multi Agent Orchestration
+{
+    "hat_id": "fact_checker",
+    "name": "Research Summary Fact-Checker",
+    "model": "gpt-4",
+    "role": "tool",
+    "instructions": "Verify the accuracy of research summaries by cross-checking against credible sources.",
+    "tools": [
+      "fact_checker"
+    ], 
+    "relationships": [], // TODO: Implement relationship-based agent handoffs (e.g., this Hat works directly with summarizer Hat)
+    "team_id": "team_1", // TODO: Use team_id to coordinate multi-agent flows, e.g., filter agents by team during execution
+    "flow_order": 3, // TODO: Enforce this execution order in your multi-agent pipeline (planner → summarizer → fact_checker)
+    "qa_loop": false, // TODO: If true, allow this Hat to loop back for QA/fix suggestions before finalizing output
+    "critics": [], // TODO: Add IDs of critic Hats that should review this Hat's output (auto-trigger feedback loops)
+    "active": true, // TODO: Use this to toggle whether a Hat participates in flows without deleting the file
+    "memory_tags": [
+      "summary",
+      "fact_checking"
+    ], // TODO: Tag stored memories with these categories for better search/filtering during memory retrieval
+    "retry_limit": 2, // TODO: After failed outputs, allow up to 2 retries (based on critic feedback or validation rules)
+    "description": "Fact-checks research summaries against credible sources."
+  }
