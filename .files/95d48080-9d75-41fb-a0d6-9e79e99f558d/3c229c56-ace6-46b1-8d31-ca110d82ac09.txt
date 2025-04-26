@@ -1,1 +1,0 @@
-- `set schedule` — Schedule Hat switching

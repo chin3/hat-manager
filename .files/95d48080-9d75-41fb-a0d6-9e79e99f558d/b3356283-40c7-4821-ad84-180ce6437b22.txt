@@ -1,1 +1,0 @@
-- `show team json` — View team JSON

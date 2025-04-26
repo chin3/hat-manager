@@ -1,1 +1,0 @@
-- `view schedule` — View schedules

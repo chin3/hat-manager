@@ -1,1 +1,0 @@
-- `wear fact_checker`

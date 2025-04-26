@@ -1,1 +1,0 @@
-- `view memories` — Show top memories

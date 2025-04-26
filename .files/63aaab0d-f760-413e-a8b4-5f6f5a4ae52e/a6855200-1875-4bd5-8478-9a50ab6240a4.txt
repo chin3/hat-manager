@@ -1,1 +1,0 @@
-- `view team <team_id>` — Show team Hats

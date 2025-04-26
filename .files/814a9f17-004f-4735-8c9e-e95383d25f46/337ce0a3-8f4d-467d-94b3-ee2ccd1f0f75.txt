@@ -1,1 +1,0 @@
-- `orchestrate team` — Auto-create a team of Hats

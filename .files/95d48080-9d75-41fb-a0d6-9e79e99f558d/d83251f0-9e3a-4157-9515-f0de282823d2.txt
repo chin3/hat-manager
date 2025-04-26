@@ -1,1 +1,0 @@
-- Visual polish for logs (emojis/dividers) ✔️
