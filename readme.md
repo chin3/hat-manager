@@ -1,7 +1,3 @@
-Got it! Here's the **README.md** content cleanly formatted for direct copy-paste, **without spilling out of the markdown block**:
-
----
-
 # 🎩 Hat Manager — Multi-Agent AI Orchestration Framework
 
 > **Microsoft AI Agents Hackathon Submission**  
