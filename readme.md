@@ -1,3 +1,4 @@
+
 # 🎩 Hat Manager — Multi-Agent AI Orchestration Framework
 
 > **Microsoft AI Agents Hackathon Submission**  
@@ -12,33 +13,41 @@
 - Its own vector memory (text + context search)
 - Custom tools (integrations/extensions)
 - Flow logic (for chaining in multi-agent teams)
+- Human-in-the-loop QA approval & retry logic
 
 Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrated reasoning tasks.
 
 ---
 
-## 🎯 Key Features
+## 🎯 Key Features (Current)
+
 - **Multi-Agent Team Flow**: Chain Hats into teams like `Planner → Summarizer → Critic`.
-- **QA Loop with Critic Agent**: Auto-retries based on Critic feedback (`#REVISION_REQUIRED` / `#APPROVED`).
-- **Human-in-the-Loop Approval**: After Critic, the user decides to approve or retry output manually.
+- **Critic QA Loop**: Agents can retry based on Critic feedback (`#REVISION_REQUIRED` / `#APPROVED`).
+- **User Approval**: Manually approve or retry agent output after Critic step.
 - **Dynamic Hat Management**:
-  - Create Hats from prompts or blank templates.
-  - Edit Hats via UI form or JSON.
-- **Per-Hat Memory**:
-  - Vector-based memory retrieval and context injection.
+  - Create Hats from prompts (LLM-powered) or from blank templates.
+  - Edit Hats via Chainlit UI or raw JSON.
+  - Auto-generate **unique hat_id** per Hat.
+- **Per-Hat Vector Memory**:
+  - Stores conversations per Hat (with role/timestamp metadata).
+  - Memory search & context injection into prompts.
   - Commands: `view memories`, `clear memories`, `export memories <hat_id>`.
-- **UI Enhancements (Chainlit)**:
-  - Sidebar with active Hats, Teams, and TODO roadmap.
-  - Buttons for quick actions: Wear, Edit, Schedule.
+- **Scheduled Hat Switching**:
+  - Automatically switch Hats at specific times.
+- **UI Enhancements**:
+  - Sidebar showing Hats, Teams, and TODOs.
+  - Wear, Edit, and Schedule Hats via action buttons.
+  - JSON view of Hats for easy manual tweaking.
 
 ---
 
 ## 🛠️ Tech Stack
+
 - **Chainlit**: Frontend for AI interactions.
-- **OpenAI API**: LLM backend (supports `gpt-3.5` and `gpt-4`).
-- **ChromaDB / Vector Store**: Per-Hat context retrieval.
+- **OpenAI API**: LLM backend for responses and team creation.
+- **Ollama**: Local LLM for Hat creation.
+- **ChromaDB**: Per-Hat memory persistence.
 - **Python**: Backend orchestration logic.
-- **Ollama-Ready**: Future-ready for local LLMs.
 
 ---
 
@@ -60,68 +69,58 @@ OPENAI_API_KEY=sk-xxxxxxxxxxxx
 chainlit run app.py
 ```
 - Visit [http://localhost:8000](http://localhost:8000)
-- Start by typing `help` or using sidebar buttons.
+- Start by typing `help` or use action buttons.
 
 ---
 
 ## 🧠 Core Concepts
 
 ### 🎩 **Hats**:
-- Represent AI agents with identity + memory.
-- Editable JSON or UI form.
-- Switch using: `wear <hat_id>`
+- Each Hat = a persona/agent.
+- Fields: `hat_id`, `name`, `role`, `model`, `instructions`, `tools`, `qa_loop`, etc.
+- Manage with: `wear <hat_id>`, `edit <hat_id>`, or action buttons.
 
 ### 👥 **Teams**:
-- Chains of Hats working in sequence.
-- Auto-generated via: `create team`
-- Run with: `run team <team_id>`
+- Compose Hats into sequential workflows.
+- Auto-generate with: `create team`
+- Save and run with: `save team`, `run team <team_id>`
 
-### 🔁 **QA Loop**:
-- Critic agent can trigger retry of previous Hat.
-- Retry limit controlled per Hat.
-
-### 🧑‍⚖️ **User Approval**:
-- After Critic, user decides:
-  ```
-  Approve or Retry? Type approve or retry.
-  ```
+### 🔁 **Critic QA Loop**:
+- Critic Hats can trigger retries for prior Hats.
+- Retry limits configurable per Hat.
+- Supports nested retries + user approval fallback.
 
 ---
 
-## 📸 Screenshots & GIFs
+## 📸 Screenshots & GIFs (Suggested)
 
 1. **🖥️ App UI Overview**  
-   > _Screenshot:_ Chainlit app with Sidebar, Hat Selector, Chat Interface.
+   _Screenshot:_ Chainlit interface with sidebar + chat.
 
-2. **🎩 Hat Editor (UI)**  
-   > _GIF or Screenshot:_ Creating/editing a Hat with the form interface.
+2. **🎩 Hat Editor UI**  
+   _GIF:_ Editing Hat metadata via UI.
 
-3. **👥 Team Flow in Action**  
-   > _GIF:_ Multi-Hat team running with Summarizer → Critic → Approval loop.
+3. **👥 Team Flow Example**  
+   _GIF:_ Planner → Summarizer → Critic → User approval loop.
 
-4. **🧠 Memory View**  
-   > _Screenshot:_ Top retrieved memories for a Hat.
-
-5. **📊 Flow Visualizer (Planned)**  
-   > _Placeholder for Future:_ Visual representation of team flow.
+4. **🧠 Memory Retrieval**  
+   _Screenshot:_ Viewing per-Hat memories.
 
 ---
 
 ## 📋 Example Team Flow
+
 ```bash
-run team research_team
+run team auto_team_20250426
 ```
-1. **Summarizing Agent**:
-   - Generates initial summary based on input.
-2. **Critic Agent**:
-   - Reviews summary.
-   - Tags as `#APPROVED` or `#REVISION_REQUIRED`.
-3. **User**:
-   - Decides to approve or retry manually.
+
+1. **Summarizing Agent**: Generates summary.
+2. **Critic Agent**: Reviews, may request retry.
+3. **User**: Manually approves or retries if needed.
 
 ---
 
-## 📦 Available Commands
+## 📦 Commands Cheat Sheet
 
 | Command                   | Description                                      |
 |---------------------------|--------------------------------------------------|
@@ -142,24 +141,31 @@ run team research_team
 
 ---
 
-## 🛣️ Future TODOs
-- [ ] **Import Memories** from JSON or text files.
-- [ ] **Run Again / Create New Team** buttons post-flow.
-- [ ] **Flow Visualizer** for graphical team composition.
-- [ ] **Tool Integration**: Add custom tool-enabled agents.
-- [ ] **AutoGen / Microsoft AI Foundry** compatibility layers.
-- [ ] **Microsoft Copilot SDK** integration for enhanced workflow.
+## 🛣️ Future TODOs (Upcoming)
+
+- [ ] **Import Memories**: JSON/text memory ingestion.
+- [ ] **Run Again**: Button to re-run team after approval.
+- [ ] **Flow Visualizer**: Mermaid-based visual team editor.
+- [ ] **@Mention Hats**: User calls Hats via @name inline.
+- [ ] **Tool Integration**: Add real APIs/tools to Hats.
+- [ ] **Azure AI Integration**: Copilot SDK, AI Foundry.
+- [ ] **Memory Tagging**: Allow tag-based retrieval and filtering.
+- [ ] **AutoGen Integration**: Support agent loops + tools.
 
 ---
 
 ## 🙌 Acknowledgments
-- Inspired by the **Microsoft AI Agents Hackathon**.
-- Powered by **Chainlit**, **OpenAI**, and **Ollama**.
+
+- Built for the **Microsoft AI Agents Hackathon**.
+- Powered by **Chainlit**, **OpenAI**, **Ollama**, **ChromaDB**.
 
 ---
 
 ## 📝 License
-MIT License. Free to use, modify, and extend.
+
+MIT License — Open to extend and build upon.
+
+
 
 ---
 
@@ -179,6 +185,9 @@ MIT License. Free to use, modify, and extend.
 ### **Scalability:**
 - Add **Async AI calling** to OpenAI or local models.
 - Explore **Azure AI Foundry** or full backend migration to Azure.
+
+### ***LLM Robustness***
+- Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
 
 ------------------------------------------------------------------------------------------ 
 
@@ -240,3 +249,71 @@ The Hat Memory System integrates local vector databases (ChromaDB) into individu
 - Support **memory snapshot import/export**.
 
 > This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
+
+------------------------------------------------------------------------------------------ 
+### 📝 **Summary: How to Integrate Critic to Any Agent for Retry Loops**
+
+Here’s a concise step-by-step **guide** on how you integrated the **Critic Agent** with **any Hat** to enable **QA loops** (retry logic), **assuming Critic is hardcoded** for now.
+
+---
+
+## 🎯 **1️⃣ Enable QA Loop for Target Hat**
+- In the target Hat's JSON:
+  ```json
+  "qa_loop": true,
+  "critics": ["critic_auto_team_test"]  // Reference to the hardcoded Critic
+  ```
+
+---
+
+## 🎯 **2️⃣ Add the Critic Agent to the Team**
+- Ensure the **Critic Agent** is also part of the same `team_id`.
+- Critic's `flow_order` must come **after** the target Hat it reviews.
+
+---
+
+## 🎯 **3️⃣ Runtime Flow Logic (What Happens Behind the Scenes):**
+
+1. **Run Team Flow**: 
+   - Target Hat generates output.
+   
+2. **Critic Agent Executes**: 
+   - Receives **input** from the previous Hat's **output**.
+   - Responds with either:
+     - **`#APPROVED`** → Flow continues or ends.
+     - **`#REVISION_REQUIRED`** → Triggers **retry logic**.
+
+3. **Retry Logic**:
+   - Re-executes the **previous Hat** (target Hat).
+   - Re-runs the **Critic** on the new output.
+   - Retries **up to `retry_limit`**.
+   - If still failing, **asks human to approve/retry manually**.
+
+---
+
+## 🛠 **Required Fields in Hat JSON for QA Loop:**
+```json
+{
+  "qa_loop": true,
+  "critics": ["critic_auto_team_test"],  // Hardcoded critic for now
+  "retry_limit": 2,                      // How many times to retry before asking the user
+  "flow_order": 1                        // Must run before the Critic
+}
+```
+
+---
+
+## 💡 **Key Points to Remember:**
+- **Critic Hat** doesn’t need to be dynamic for testing.
+  - Just ensure the `hat_id` matches what’s hardcoded in your **logic**.
+- **Critic logic** is **generic** — it works for any Hat that opts-in with `qa_loop: true`.
+- You can have **multiple Hats** reviewed by **one Critic**, if desired.
+
+---
+
+## ✅ **Why This Works:**
+- Hats now support **self-contained QA logic** without needing external logic.
+- You can **easily plug** any Hat into this system by:
+  - Enabling **`qa_loop`**
+  - Adding the **Critic’s ID** to **`critics`**
+
