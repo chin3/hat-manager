@@ -62,17 +62,8 @@ def list_hats():
 # --- LLM-Based Hat Creation ---
 
 def create_hat_from_prompt(prompt, llm):
-    full_prompt = f"Create a Hat identity JSON from this description:\n\n{prompt}\n\nMake sure to include all enhanced fields like role, team_id, flow_order, etc."
-    response = llm(full_prompt)
-
-    # Extract JSON from markdown code block (```json ... ```)
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", response, re.DOTALL)
-    if match:
-        cleaned_json = match.group(1)
-    else:
-        cleaned_json = re.search(r"(\{.*\})", response, re.DOTALL).group(1)
-
-    hat_data = json.loads(cleaned_json)
+    # llm() now returns a validated dictionary directly!
+    hat_data = llm(prompt)
     return ensure_schema_defaults(hat_data)
 
 def list_hats_by_team(team_id):
@@ -111,15 +102,15 @@ def ensure_schema_defaults(hat):
 
 # --- Ollama LLM Call ---
 
-def ollama_llm(prompt, model="llama3:8b"):
-    system_message = """You are a helpful assistant that only outputs valid JSON. 
+def ollama_llm(prompt, model="llama3:8b", max_retries=3):
+    system_message = """You are a helpful assistant that only outputs valid JSON.
 Do not wrap your response in markdown or add explanations.
 
 Expected JSON format:
 {
   "hat_id": "summarizer",
   "name": "Article Summarizer",
-  "model": "gpt-4",
+  "model": "gpt-3.5-turbo",
   "role": "tool",
   "instructions": "Summarize input text into concise bullet points.",
   "tools": ["summarizer"],
@@ -135,25 +126,49 @@ Expected JSON format:
 }
 """
 
-    response = requests.post("http://localhost:11434/api/chat", json={
-        "model": model,
-        "stream": False,
-        "messages": [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": prompt}
-        ]
-    })
+    retries = 0
+    while retries < max_retries:
+        response = requests.post("http://localhost:11434/api/chat", json={
+            "model": model,
+            "stream": False,
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt}
+            ]
+        })
 
-    print("RAW RESPONSE TEXT:", response.text)
+        if response.status_code == 200:
+            content = response.json()["message"]["content"]
+            print("RAW RESPONSE TEXT:", content)
 
-    if response.status_code == 200:
-        return response.json()["message"]["content"]
-    else:
-        raise Exception(f"Ollama API Error: {response.status_code} - {response.text}")
+            # Extract and validate JSON
+            try:
+                match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
+                if match:
+                    cleaned_json = match.group(1)
+                else:
+                    cleaned_json = re.search(r"(\{.*\})", content, re.DOTALL).group(1)
+
+                hat_data = json.loads(cleaned_json)
+
+                # Quick schema check for critical fields
+                required_fields = ["hat_id", "name", "model", "instructions"]
+                if all(field in hat_data for field in required_fields):
+                    return hat_data  # Success
+                else:
+                    raise ValueError(f"Missing required fields: {required_fields}")
+
+            except Exception as e:
+                print(f"⚠️ JSON Parse/Validation Failed: {e}. Retrying...")
+                retries += 1
+        else:
+            raise Exception(f"Ollama API Error: {response.status_code} - {response.text}")
+
+    raise Exception(f"Failed to get valid JSON after {max_retries} attempts.")
 
 # --- CLI Test ---
 if __name__ == "__main__":
-    prompt = "Make a Hat that acts as a fact-checker for research summaries."
+    prompt = "Make a Hat that writes poems about the weather."
     hat = create_hat_from_prompt(prompt, ollama_llm)
     print(json.dumps(hat, indent=2))
     save_hat(hat["hat_id"], hat)

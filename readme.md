@@ -180,6 +180,9 @@ MIT License. Free to use, modify, and extend.
 - Add **Async AI calling** to OpenAI or local models.
 - Explore **Azure AI Foundry** or full backend migration to Azure.
 
+### ***LLM Robustness***
+- Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
+
 ------------------------------------------------------------------------------------------ 
 
 # 🧠 Hat Memory System Documentation
@@ -240,3 +243,74 @@ The Hat Memory System integrates local vector databases (ChromaDB) into individu
 - Support **memory snapshot import/export**.
 
 > This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
+
+------------------------------------------------------------------------------------------ 
+### 📝 **Summary: How to Integrate Critic to Any Agent for Retry Loops**
+
+Here’s a concise step-by-step **guide** on how you integrated the **Critic Agent** with **any Hat** to enable **QA loops** (retry logic), **assuming Critic is hardcoded** for now.
+
+---
+
+## 🎯 **1️⃣ Enable QA Loop for Target Hat**
+- In the target Hat's JSON:
+  ```json
+  "qa_loop": true,
+  "critics": ["critic_auto_team_test"]  // Reference to the hardcoded Critic
+  ```
+
+---
+
+## 🎯 **2️⃣ Add the Critic Agent to the Team**
+- Ensure the **Critic Agent** is also part of the same `team_id`.
+- Critic's `flow_order` must come **after** the target Hat it reviews.
+
+---
+
+## 🎯 **3️⃣ Runtime Flow Logic (What Happens Behind the Scenes):**
+
+1. **Run Team Flow**: 
+   - Target Hat generates output.
+   
+2. **Critic Agent Executes**: 
+   - Receives **input** from the previous Hat's **output**.
+   - Responds with either:
+     - **`#APPROVED`** → Flow continues or ends.
+     - **`#REVISION_REQUIRED`** → Triggers **retry logic**.
+
+3. **Retry Logic**:
+   - Re-executes the **previous Hat** (target Hat).
+   - Re-runs the **Critic** on the new output.
+   - Retries **up to `retry_limit`**.
+   - If still failing, **asks human to approve/retry manually**.
+
+---
+
+## 🛠 **Required Fields in Hat JSON for QA Loop:**
+```json
+{
+  "qa_loop": true,
+  "critics": ["critic_auto_team_test"],  // Hardcoded critic for now
+  "retry_limit": 2,                      // How many times to retry before asking the user
+  "flow_order": 1                        // Must run before the Critic
+}
+```
+
+---
+
+## 💡 **Key Points to Remember:**
+- **Critic Hat** doesn’t need to be dynamic for testing.
+  - Just ensure the `hat_id` matches what’s hardcoded in your **logic**.
+- **Critic logic** is **generic** — it works for any Hat that opts-in with `qa_loop: true`.
+- You can have **multiple Hats** reviewed by **one Critic**, if desired.
+
+---
+
+## ✅ **Why This Works:**
+- Hats now support **self-contained QA logic** without needing external logic.
+- You can **easily plug** any Hat into this system by:
+  - Enabling **`qa_loop`**
+  - Adding the **Critic’s ID** to **`critics`**
+
+---
+
+Let me know if you want to automate critic detection or make it more dynamic next! 🔄💡
