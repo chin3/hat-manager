@@ -39,7 +39,7 @@ from actions import (
 
 from flow import run_team_flow
 
-from utils import generate_unique_hat_id, current_timestamp, format_memory_entry
+from utils import format_tags_for_display, generate_unique_hat_id, current_timestamp, format_memory_entry, merge_tags
 
 load_dotenv()
 # Set your OpenAI API key
@@ -590,20 +590,20 @@ async def handle_message(message: cl.Message):
                 memory_data = collection.get(ids=[last_memory_id], include=["metadatas"])
                 current_meta = memory_data["metadatas"][0]
 
-                existing_tags_raw = current_meta.get("tags", "")
-                existing_tags = existing_tags_raw.split(",") if existing_tags_raw else []
-                tags_list = list(set(existing_tags + [tag]))
-                updated_tags = ",".join(tags_list)
+                # 💡 Use your utility here!
+                merged_tags = merge_tags(current_meta.get("tags", ""), tag)
+                merged_tags_csv = ",".join(merged_tags)
 
                 collection.update(
                     ids=[last_memory_id],
                     metadatas=[{
                         "timestamp": current_meta.get("timestamp", datetime.now().isoformat()),
                         "role": current_meta.get("role", "user"),
-                        "tags": updated_tags
+                        "tags": merged_tags_csv  # ✅ CSV format
                     }]
                 )
-                await cl.Message(content=f"🏷️ Memory tagged as `{tag}` in `{last_memory_hat_id}`!").send()
+                formatted_tags = format_tags_for_display(merged_tags)
+                await cl.Message(content=f"🏷️ Memory tagged as `{tag}` in `{last_memory_hat_id}`! Now tagged: {formatted_tags}").send()
             except Exception as e:
                 await cl.Message(content=f"❌ Failed to tag memory: {e}").send()
         else:

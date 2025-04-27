@@ -23,6 +23,7 @@ def add_memory_to_hat(hat_id, memory_text, role="user", tags=None, session=None)
     elif not isinstance(tags, list):
         tags = []
 
+    # Convert to CSV string for Chroma
     tag_string = ",".join(tags) if tags else ""
 
     collection = get_vector_db_for_hat(hat_id)
@@ -35,18 +36,19 @@ def add_memory_to_hat(hat_id, memory_text, role="user", tags=None, session=None)
         metadatas=[{"timestamp": timestamp, "role": role, "tags": tag_string}]
     )
 
-    # Track last memory for tagging
     if session:
         session.set("last_memory_id", memory_id)
         session.set("last_memory_hat_id", hat_id)
 
-
-def search_memory(hat_id, query, k=None, tag_filter=None):
+def search_memory(hat_id, query, k=10, tag_filter=None):
     collection = get_vector_db_for_hat(hat_id)
 
-    # If k=None, get ALL memories
+    # Get ALL memories if k is None
     if k is None:
-        k = collection.count()  # Total documents in this collection
+        total_docs = collection.count()
+        if total_docs == 0:
+            return []
+        k = total_docs
 
     results = collection.query(
         query_texts=[query],
@@ -60,19 +62,16 @@ def search_memory(hat_id, query, k=None, tag_filter=None):
     if not docs_list or not metas_list:
         return []
 
+    # Manual filtering on CSV tags until manaul based
     filtered_results = []
     for doc, meta in zip(docs_list, metas_list):
-        tags_field = meta.get('tags', '')
-
-        tags_list = [t.strip() for t in tags_field.split(",") if t] if isinstance(tags_field, str) else []
-
-        print(f"🔍 Tags Parsed: {tags_list}, Filter: {tag_filter}")
+        tags_str = meta.get('tags', '')
+        tags_list = [t.strip() for t in tags_str.split(",") if t] if isinstance(tags_str, str) else []
 
         if tag_filter is None or tag_filter in tags_list:
             filtered_results.append((doc, meta))
 
     return filtered_results
-
 
 def clear_memory(hat_id):
     collection = get_vector_db_for_hat(hat_id)
