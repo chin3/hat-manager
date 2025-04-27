@@ -26,8 +26,11 @@ async def run_team_flow(team_id, input_text):
         qa_loop = hat.get('qa_loop', False)
         retry_limit = hat.get('retry_limit', 0)
 
+
+
         response_text = generate_openai_response(current_input, hat)
 
+        # 📝 Save memory with tags
         add_memory_to_hat(hat_id, current_input, role="user")
         add_memory_to_hat(hat_id, response_text, role="bot")
 
@@ -45,7 +48,7 @@ async def run_team_flow(team_id, input_text):
                 hat, team_hats, conversation_log, retry_counts, retry_limit, team_id
             )
             if handled:
-                return  # Exit or pause here for user approval
+                return  # Pause for user approval, QA loop handled
 
         current_input = response_text
         i += 1
@@ -108,16 +111,18 @@ async def handle_qa_loop(hat, team_hats, conversation_log, retry_counts, retry_l
 
                 prev_hat = next(h for h in team_hats if h['hat_id'] == retry_target['hat_id'])
                 retry_response = generate_openai_response(retry_target['input'], prev_hat)
-
-                add_memory_to_hat(prev_hat['hat_id'], retry_target['input'], role="user")
-                add_memory_to_hat(prev_hat['hat_id'], retry_response, role="bot")
-
+                prev_hat_tags = prev_hat.get('memory_tags', [])
+                add_memory_to_hat(prev_hat['hat_id'], retry_target['input'], role="user", tags=prev_hat_tags, session=cl.user_session)
+                add_memory_to_hat(prev_hat['hat_id'], retry_response, role="bot", tags=prev_hat_tags, session=cl.user_session)
+                
                 await cl.Message(content=f"🧢 {prev_hat['name']} retry responded:\n{retry_response}").send()
-
+                await cl.Message(content="🏷️ Want to tag this memory? Type: `tag last as <tag>`").send()
                 critic_response = generate_openai_response(retry_response, hat)
 
-                add_memory_to_hat(hat['hat_id'], retry_response, role="user")
-                add_memory_to_hat(hat['hat_id'], critic_response, role="bot")
+                qa_tags = hat.get('memory_tags', [])
+
+                add_memory_to_hat(hat['hat_id'], retry_response, role="user", tags=qa_tags, session=cl.user_session)
+                add_memory_to_hat(hat['hat_id'], critic_response, role="bot" , tags=qa_tags, session=cl.user_session)
 
                 await cl.Message(content=f"🧢 {hat['name']} re-reviewed:\n{critic_response}").send()
 

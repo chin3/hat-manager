@@ -1,6 +1,7 @@
 # utils.py
 import uuid
 from datetime import datetime
+import json
 
 def generate_unique_hat_id(existing_ids):
     while True:
@@ -15,9 +16,24 @@ def current_timestamp():
     return datetime.now().isoformat()
 
 def format_memory_entry(doc, meta):
-    """
-    Formats a memory document and metadata for UI display.
-    """
-    timestamp = meta.get('timestamp', 'unknown time')
-    role = meta.get('role', 'unknown role').capitalize()
-    return f"[{timestamp}][{role}] {doc}"
+    import json  # Make sure this is imported
+
+    tags_str = meta.get("tags", "")
+
+    tags_list = []
+
+    if isinstance(tags_str, list):
+        tags_list = tags_str
+    elif isinstance(tags_str, str):
+        tags_str_clean = tags_str.strip()
+        if tags_str_clean.startswith("[") and tags_str_clean.endswith("]"):
+            try:
+                tags_list = json.loads(tags_str_clean)
+            except json.JSONDecodeError:
+                tags_list = [t.strip() for t in tags_str_clean.strip("[]").split(",") if t]
+        elif tags_str_clean:
+            tags_list = [t.strip() for t in tags_str_clean.split(",") if t]
+
+    tags_display = f"[Tags: {', '.join(tags_list)}]" if tags_list else ""
+    print(f"DEBUG META TAGS: {tags_str} → {tags_list}")
+    return f"[{meta.get('timestamp')}][{meta.get('role').capitalize()}] {doc} {tags_display}"
