@@ -37,17 +37,12 @@ from flow import finalize_team_flow, run_team_flow
 from utils import format_tags_for_display, generate_unique_hat_id, current_timestamp, format_memory_entry, merge_tags
 
 load_dotenv()
-# Set your OpenAI API key
-# client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# Ensure hat_manager.py exists and provides these functions/objects
-# It should handle file operations, LLM calls, etc.
 try:
     from hat_manager import (
         list_hats,
         load_hat,
         save_hat,
-        ollama_llm # Assuming this is your LLM instance
+       # ollama_llm # Assuming this is your LLM instance
     )
 except ImportError:
     print("Error: Could not import from hat_manager.py.")
@@ -142,148 +137,6 @@ async def create_blank_hat():
     except Exception as e:
         await cl.Message(content=f"❌ Failed to save blank hat: {e}").send()
 
-
-
-# def generate_openai_response(prompt: str, hat: dict):
-#     """
-#     Generates an AI response using the Hat schema for context.
-#     Supports instructions, tools, role, and memory injection.
-#     """
-
-#     hat_name = hat.get('name', 'Unnamed Agent')
-#     hat_id = hat.get('hat_id')
-#     instructions = hat.get('instructions', '')
-#     role = hat.get('role', 'agent')
-#     tools = ", ".join(hat.get('tools', [])) or "none"
-
-#     # 🧠 Fetch relevant memories
-#     memory_context = ""
-#     relevant_memories = search_memory(hat_id, prompt, k=3)
-#     if relevant_memories:
-#         formatted = "\n".join([
-#             f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
-#             for doc, meta in relevant_memories if meta and doc
-#         ])
-#         memory_context = f"\n\nRelevant Memories:\n{formatted}"
-#     relationship_context = ""
-
-#     relationships = hat.get("relationships", [])
-#     if relationships:
-#         related_hats_info = []
-#         for rel_id in relationships:
-#             try:
-#                 rel_hat = load_hat(rel_id)
-#                 rel_name = rel_hat.get("name", rel_id)
-#                 rel_desc = rel_hat.get("description", "No description provided.")
-#                 rel_tools_list = rel_hat.get("tools", [])
-#                 rel_tools = ", ".join(rel_tools_list) if rel_tools_list else "none"
-
-#                 related_hats_info.append(f"- @{rel_id}: \"{rel_desc}\" (Tools: {rel_tools})")
-#             except Exception as e:
-#                 related_hats_info.append(f"- @{rel_id}: (Details not found)")
-
-
-#         if related_hats_info:
-#             relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(related_hats_info) + "\nMention them using @ if you need assistance!"
-
-#     system_prompt = f"""
-# You are a {role} agent named '{hat_name}'.
-# Your tools: {tools}.
-# Instructions: {instructions}.
-# {relationship_context}
-# {memory_context if memory_context else ''}
-# """.strip()
-
-#     # 🧠 Optional: Print or log system_prompt if needed for debugging.
-
-#     response = client.chat.completions.create(
-#         model=hat.get("model", "gpt-3.5-turbo"),
-#         messages=[
-#             {"role": "system", "content": system_prompt},
-#             {"role": "user", "content": prompt}
-#         ],
-#         temperature=0.7,
-#         max_tokens=1000
-#     )
-#     print("RAW PROMPT for Agent Context:", system_prompt)
-
-#     # 🛑 Return full response for better control later
-#     return response.choices[0].message.content
-
-# def generate_team_from_goal(goal):
-
-#     # Dynamic team_id
-#     team_id = f"auto_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-#     system_prompt = f"""
-#     You are an AI that builds specialized multi-agent teams ("Hats") for complex tasks.
-
-#     Each Hat must include:
-#     - hat_id: short and unique (e.g., planner_{team_id})
-#     - name: human-friendly name
-#     - model: gpt-3.5-turbo
-#     - role: planner, summarizer, critic, tool, researcher
-#     - instructions: specific task details
-#     - tools: [] or tool names
-#     - relationships: [] or related hat_ids this agent collaborates with
-#     - team_id: "{team_id}"
-#     - flow_order: 1, 2, 3...
-#     - qa_loop: true/false
-#     - critics: hat_ids that review this hat
-#     - active: true/false
-#     - memory_tags: ["tag1", "tag2"]
-#     - retry_limit: 1-3
-#     - description: 1-line purpose
-
-#     ### Goal:
-#     {goal}
-
-#     ### Example:
-#     [
-#       {{
-#         "hat_id": "planner_{team_id}",
-#         "name": "Planning Agent",
-#         "model": "gpt-3.5-turbo",
-#         "role": "planner",
-#         "instructions": "Break down tasks.",
-#         "tools": [],
-#         "relationships": ["summarizer_{team_id}"],
-#         "team_id": "{team_id}",
-#         "flow_order": 1,
-#         "qa_loop": false,
-#         "critics": [],
-#         "active": true,
-#         "memory_tags": ["planning"],
-#         "retry_limit": 1, 
-#         "description": "Plans tasks for the team."
-#       }},
-#       ...
-#     ]
-
-#     Output valid JSON. Include diverse roles/tools relevant to the goal.
-#     """
-
-#     response = client.chat.completions.create(
-#         model="gpt-3.5-turbo",
-#         messages=[
-#             {"role": "system", "content": system_prompt},
-#             {"role": "user", "content": f"My goal: {goal}"}
-#         ],
-#         temperature=0.7,
-#         max_tokens=1200
-#     )
-
-#     result_text = response.choices[0].message.content
-
-#     try:
-#         match = re.search(r"\[.*\]", result_text, re.DOTALL)
-#         if match:
-#             return json.loads(match.group(0))
-#         else:
-#             raise ValueError("No valid JSON team found in response.")
-#     except Exception as e:
-#         print("Error parsing team:", e)
-#         return []
 
 async def handle_hat_mention(trigger_hat_id, trigger_message, target_hat_id, hats_list):
     # Load target hat data
@@ -514,7 +367,6 @@ async def handle_message(message: cl.Message):
         story_prompt = parts[3].strip()
 
         # Create a unique team_id based on time
-        from datetime import datetime
         team_id = f"story_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
         # Build the team hats dynamically

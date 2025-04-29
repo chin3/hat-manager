@@ -7,6 +7,33 @@ import chainlit as cl
 
 import json
 
+# -----------------------------
+# Unified LLM Prompt Handlers
+# -----------------------------
+
+def build_hat_schema_prompt():
+    return """You are a helpful assistant that only outputs valid JSON.
+Do not wrap your response in markdown or add explanations.
+
+Expected JSON format:
+{
+  "hat_id": "summarizer",
+  "name": "Article Summarizer",
+  "model": "gpt-3.5-turbo",
+  "role": "tool",
+  "instructions": "Summarize input text into concise bullet points.",
+  "tools": ["summarizer"],
+  "relationships": [],
+  "team_id": "team_1",
+  "flow_order": 2,
+  "qa_loop": false,
+  "critics": [],
+  "active": true,
+  "memory_tags": ["summary"],
+  "retry_limit": 1,
+  "description": "Summarizes text into concise points."
+}"""
+
 # Persistent ChromaDB client setup
 chroma_client = chromadb.PersistentClient(path="./chromadb_data")
 

@@ -60,5 +60,9 @@ chromadb_data/
 hats/*
 !hats/.gitkeep
 
+# Local Missons
+missions/*
+!messions/.gitkeep
+
 # Runtime Files
 .files/
