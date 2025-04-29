@@ -1,4 +1,3 @@
-
 # 🎩 Hat Manager — Multi-Agent AI Orchestration Framework
 
 > **Microsoft AI Agents Hackathon Submission**  
@@ -10,6 +9,7 @@
 
 **Hat Manager** is a local-first AI orchestration framework where each "Hat" is an independent AI agent with:
 - A unique identity (`hat_id`, name, role, model, instructions)
+- `base_hat_id` to track template origin
 - Its own vector memory (text + context search)
 - Custom tools (integrations/extensions)
 - Flow logic (for chaining in multi-agent teams)
@@ -31,7 +31,7 @@ Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrat
 - **Per-Hat Vector Memory**:
   - Stores conversations per Hat (with role/timestamp metadata).
   - Memory search & context injection into prompts.
-  - Commands: `view memories`, `clear memories`, `export memories <hat_id>`.
+  - Commands: `view memories`, `clear memories`, `export memories <hat_id>`, `tag last as <tag>`
 - **Scheduled Hat Switching**:
   - Automatically switch Hats at specific times.
 - **UI Enhancements**:
@@ -40,7 +40,7 @@ Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrat
   - JSON view of Hats for easy manual tweaking.
   - [x] **@Mention Hats**: User calls Hats via @name inline. 4/29/2025
   - [x] **Memory Tagging**: Allow tag-based retrieval and filtering. tag last as <tag name>
-  - [x] **Agent Reflection**: Agents at the end of critic/qa loop critique and provide feedback and lessons learned. 
+  - [x] **Agent Reflection**: Agents at the end of critic/qa loop critique and provide feedback and lessons learned.
   - [x] **Mission Debrief at the end**: Shows agents summary of the conversation at the end
   - [x] **AGENT MVP AWARD**: We must reward our agents for their hard work!
 
@@ -53,6 +53,31 @@ Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrat
 - **Ollama**: Local LLM for Hat creation.
 - **ChromaDB**: Per-Hat memory persistence.
 - **Python**: Backend orchestration logic.
+
+
+
+## 🧱 Hat JSON Schema (Normalized)
+
+```json
+{
+  "hat_id": "planner_team_20250429",
+  "base_hat_id": "planner",
+  "name": "AI Planner",
+  "model": "gpt-3.5-turbo",
+  "role": "planner",
+  "instructions": "Create strategic plans for achieving complex goals.",
+  "tools": [],
+  "relationships": [],
+  "team_id": "team_20250429",
+  "flow_order": 1,
+  "qa_loop": true,
+  "critics": ["critic"],
+  "active": true,
+  "memory_tags": ["strategy", "planning"],
+  "retry_limit": 2,
+  "description": "Builds and outlines detailed plans to help teams accomplish goals."
+}
+```
 
 ---
 
@@ -124,26 +149,33 @@ run team auto_team_20250426
 3. **User**: Manually approves or retries if needed.
 
 ---
-
 ## 📦 Commands Cheat Sheet
 
-| Command                   | Description                                      |
-|---------------------------|--------------------------------------------------|
-| `wear <hat_id>`           | Load and activate a Hat                         |
-| `new blank`               | Create a new empty Hat                          |
-| `new from prompt`         | Generate Hat from a description                 |
-| `edit <hat_id>`           | Paste updated JSON for a Hat                    |
-| `create team`             | Generate a multi-Hat team from a goal           |
-| `run team <team_id>`      | Run a multi-agent team flow                     |
-| `view memories`           | View recent memories for active Hat             |
-| `clear memories`          | Delete all memories for active Hat              |
-| `export memories <hat_id>`| Export full memory as JSON                      |
-| `set schedule`            | Schedule Hat switching by time                  |
-| `view schedule`           | View scheduled Hat switches                     |
-| `current hat`             | Show current active Hat                         |
-| `save team`               | Save proposed team to disk                      |
-| `show team json`          | View raw JSON for proposed team                 |
-
+| Command | Description |
+|--------|-------------|
+| `wear <hat_id>` | Wear (activate) a specific Hat |
+| `new blank` | Create a new Hat from scratch |
+| `new from prompt` | Use LLM to create a Hat from a description |
+| `edit <hat_id>` | Start editing by pasting JSON |
+| `tag last as <tag>` | Tag the last memory for the current Hat |
+| `current hat` | Show the currently active Hat |
+| `new from base <base_hat_id>` | Clone a Hat from a template |
+| `create team` | Prompt for goal → generate team of Hats |
+| `save team` | Save the currently proposed team |
+| `show team json` | Show raw JSON of the proposed team |
+| `run team <team_id> [goal]` | Run a saved team with optional goal |
+| `view team <team_id>` | List Hats in a team with flow order |
+| `new story team <prompt>` | Shortcut: Storyteller + Critic team |
+| `view memories` | View top memories of the active Hat |
+| `view memories <tag>` | View filtered memories by tag |
+| `clear memories` | Clear memory for active Hat |
+| `export memories <hat_id>` | Export memories of a Hat to JSON (via UI) |
+| `debug memories` | Show raw memory count and structure |
+| `set schedule` | Start scheduling flow (time selection) |
+| `view schedule` | View the schedule of Hats |
+| `view missions` | Show saved mission archive files |
+| `help` | Show command help menu |
+| (mentions) `@hat_id` | Trigger another Hat by inline mention |
 ---
 
 ## 🛣️ Future TODOs (Upcoming)
@@ -151,10 +183,8 @@ run team auto_team_20250426
 - [ ] **Import Memories**: JSON/text memory ingestion.
 - [ ] **Run Again**: Button to re-run team after approval.
 - [ ] **Flow Visualizer**: Mermaid-based visual team editor.
-- [ ] **@Mention Hats**: User calls Hats via @name inline.
 - [ ] **Tool Integration**: Add real APIs/tools to Hats.
 - [ ] **Azure AI Integration**: Copilot SDK, AI Foundry.
-- [ ] **Memory Tagging**: Allow tag-based retrieval and filtering.
 - [ ] **AutoGen Integration**: Support agent loops + tools.
 
 ---
@@ -195,118 +225,7 @@ MIT License — Open to extend and build upon.
 - Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
 - Tagging currently is saved as a csv list of strings rather than a list of strings. WIll reformat memory so that the list is just a clean list
 - Tagging has become alot more difficult. 
-------------------------------------------------------------------------------------------
-Absolutely! Here's a clean and professional `README.md` tailored to your GitHub Codespaces + Chainlit + Chroma + Python devcontainer setup:
 
----
-
-```markdown
-# 🧠 Hat Manager – Dev Container Setup
-
-Welcome to the **Hat Manager** project! This repo uses a fully-configured [GitHub Codespaces](https://github.com/features/codespaces) development environment for seamless local or cloud-based Python AI development with **Chainlit**, **ChromaDB**, and **SQLite**.
-
----
-
-## 🚀 Quick Start (in GitHub Codespaces)
-
-1. Click **`Code > Codespaces > Create codespace on main`**
-2. GitHub will:
-   - Build a custom container with Python 3.11
-   - Install SQLite ≥ 3.35
-   - Auto-install all Python dependencies
-3. Once it loads, run:
-   ```bash
-   chainlit run app.py
-   ```
-
-That’s it! You’re up and running in a reproducible AI dev environment.
-
----
-
-## 🛠 DevContainer Overview
-
-This project uses:
-
-- **Python 3.11**
-- **Chainlit** – LLM-powered UI framework
-- **ChromaDB** – Local vector database
-- **SQLite 3.35+** – Required for Chroma
-- Fully preinstalled in a custom Codespace container
-
-📁 `.devcontainer/` contains:
-
-- `devcontainer.json` – Config for Codespaces + VS Code
-- `Dockerfile` – Installs Python, SQLite, and system deps
-
----
-
-## 🔍 Key Commands
-
-### 🧪 Run your app:
-```bash
-chainlit run app.py
-```
-
-### 🔎 Check environment:
-```bash
-python --version
-sqlite3 --version
-which chainlit
-```
-
-### 💾 Install extra dependencies:
-Add to your `postCreateCommand` or create a `requirements.txt`.
-
----
-
-## 🧰 Requirements (if running locally)
-
-To run without Codespaces:
-- Python 3.11+
-- SQLite ≥ 3.35
-- Install dependencies:
-  ```bash
-  pip install chainlit chromadb
-  ```
-
----
-
-## 🧼 Reset Your Devcontainer
-
-If something breaks:
-- From GitHub: **Codespaces → ... → Rebuild Container**
-- Or inside Codespaces:
-  - `Cmd+Shift+P` (or `F1`) → “Dev Containers: Rebuild Container”
-
----
-
-## 🤝 Contributing
-
-1. Fork this repo
-2. Clone & open in Codespaces
-3. Make your changes in `/workspaces/hat-manager`
-4. Push to your branch and open a PR
-
----
-
-## 📦 Future Ideas
-
-- Add `requirements.txt` or `poetry.lock` for more structured dependency control
-- Add a frontend layer (React/Tailwind) for a custom Chainlit UI
-- Use `start.sh` to auto-launch Chainlit on boot
-
----
-
-## 💬 Need Help?
-
-Feel free to open an issue or ping [@chin3](https://github.com/chin3) for setup support or ideas!
-
----
-```
-
----
-
-Would you like a one-liner badge at the top for “Open in GitHub Codespaces”? I can generate the exact markdown for that too.
 ------------------------------------------------------------------------------------------ 
 
 # 🧠 Hat Memory System Documentation
