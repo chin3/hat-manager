@@ -32,7 +32,7 @@ from actions import (
     save_edited_json,
 )
 
-from flow import run_team_flow
+from flow import finalize_team_flow, run_team_flow
 
 from utils import format_tags_for_display, generate_unique_hat_id, current_timestamp, format_memory_entry, merge_tags
 
@@ -349,7 +349,9 @@ async def handle_message(message: cl.Message):
             await cl.Message(content="🔄 User requested retry. Re-running team...").send()
             await run_team_flow(cl.user_session.get("pending_team_id"), cl.user_session.get("pending_critique_input"))
             return
-        elif content_lower == "approve":
+        elif content_lower == "approve":      
+            team_id = cl.user_session.get("pending_team_id")
+             
             await cl.Message(content="✅ Output approved by user! Team flow complete.").send()
             previous_hat = cl.user_session.get("previous_hat")
             if previous_hat:
@@ -358,6 +360,17 @@ async def handle_message(message: cl.Message):
                 await cl.Message(content=f"🎩 Resuming with hat: `{previous_hat.get('name', 'Unknown Hat')}`.").send()
             else:
                 await cl.Message(content="⚠️ No previous hat found.").send()
+                # 🚀 NEW: Finalize team flow after approval
+            conversation_log = cl.user_session.get("pending_conversation_log", [])
+            mission_success = cl.user_session.get("pending_mission_success", False)
+            revision_required = cl.user_session.get("pending_revision_required", False)
+            goal_description = cl.user_session.get("pending_goal_description", "No goal provided.")
+
+            if conversation_log:
+                await finalize_team_flow(conversation_log, mission_success, revision_required, goal_description, team_id)
+            else:
+                await cl.Message(content="⚠️ No saved conversation log. Cannot finalize mission.").send()
+
             return
         else:
             await cl.Message(content="❓ Invalid response. Please type `approve` or `retry`.").send()
@@ -491,7 +504,39 @@ async def handle_message(message: cl.Message):
         ])
         await cl.Message(content=f"👥 Team `{team_id}` Hats:\n{team_summary}").send()
         return
-    
+    ##Team short cuts
+    elif content_lower.startswith("new story team"):
+        parts = message.content.split(" ", 3)  # Keep original casing
+        if len(parts) < 4:
+            await cl.Message(content="❌ Usage: `new story team <story prompt>`").send()
+            return
+
+        story_prompt = parts[3].strip()
+
+        # Create a unique team_id based on time
+        from datetime import datetime
+        team_id = f"story_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+        # Build the team hats dynamically
+        storyteller_hat = load_hat("storyteller_hat")
+        critic_hat = load_hat("critic")  # <-- use your actual Critic hat ID here
+
+        # Assign this new team_id to the hats
+        storyteller_hat["team_id"] = team_id
+        storyteller_hat["flow_order"] = 1
+        storyteller_hat["qa_loop"] = False
+
+        critic_hat["team_id"] = team_id
+        critic_hat["flow_order"] = 2
+        critic_hat["qa_loop"] = True
+
+        # Save copies of these hats to bind them into this team
+        save_hat(f"{storyteller_hat['hat_id']}_{team_id}", storyteller_hat)
+        save_hat(f"{critic_hat['hat_id']}_{team_id}", critic_hat)
+
+        await cl.Message(content=f"✨ Created new Story Team: `{team_id}`.\n\n**Mission:** {story_prompt}").send()
+        await run_team_flow(team_id, story_prompt)
+        return
     elif cl.user_session.get("awaiting_schedule_time"):
         cl.user_session.set("awaiting_schedule_time", False)
         schedule_time = content.strip()
@@ -620,6 +665,20 @@ async def handle_message(message: cl.Message):
                 await cl.Message(content=f"❌ Failed to tag memory: {e}").send()
         else:
             await cl.Message(content="❌ No memory to tag.").send()
+    elif content_lower == "view missions":
+        MISSIONS_DIR = "./missions"
+        if not os.path.exists(MISSIONS_DIR):
+            await cl.Message(content="📂 No mission archives found yet.").send()
+            return
+
+        mission_files = [f for f in os.listdir(MISSIONS_DIR) if f.endswith(".json")]
+        if not mission_files:
+            await cl.Message(content="📂 No saved missions yet.").send()
+            return
+
+        mission_list = "\n".join([f"- `{f}`" for f in sorted(mission_files)])
+        await cl.Message(content=f"🗂️ **Saved Missions:**\n\n{mission_list}").send()
+        return
 
         # --- Fallback / General Chat ---
     else:

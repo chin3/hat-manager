@@ -22,23 +22,27 @@ def generate_openai_response(prompt: str, hat: dict):
     """
 
     hat_name = hat.get('name', 'Unnamed Agent')
-    hat_id = hat.get('hat_id')
+    hat_id = hat.get('hat_id', None)  # 🛡️ Allow missing hat_id
     instructions = hat.get('instructions', '')
     role = hat.get('role', 'agent')
-    tools = ", ".join(hat.get('tools', [])) or "none"
+    tools_list = hat.get('tools', []) or []
+    relationships = hat.get('relationships', []) or []
 
-    # 🧠 Fetch relevant memories
+    tools = ", ".join(tools_list) if tools_list else "none"
+
+    # 🧠 Fetch relevant memories (only if hat_id exists)
     memory_context = ""
-    relevant_memories = search_memory(hat_id, prompt, k=3)
-    if relevant_memories:
-        formatted = "\n".join([
-            f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
-            for doc, meta in relevant_memories if meta and doc
-        ])
-        memory_context = f"\n\nRelevant Memories:\n{formatted}"
-    relationship_context = ""
+    if hat_id:
+        relevant_memories = search_memory(hat_id, prompt, k=3)
+        if relevant_memories:
+            formatted = "\n".join([
+                f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
+                for doc, meta in relevant_memories if meta and doc
+            ])
+            memory_context = f"\n\nRelevant Memories:\n{formatted}"
 
-    relationships = hat.get("relationships", [])
+    # 🧠 Fetch relationship info (only if relationships exist)
+    relationship_context = ""
     if relationships:
         related_hats_info = []
         for rel_id in relationships:
@@ -53,10 +57,10 @@ def generate_openai_response(prompt: str, hat: dict):
             except Exception as e:
                 related_hats_info.append(f"- @{rel_id}: (Details not found)")
 
-
         if related_hats_info:
             relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(related_hats_info) + "\nMention them using @ if you need assistance!"
 
+    # 🧠 Assemble system prompt
     system_prompt = f"""
 You are a {role} agent named '{hat_name}'.
 Your tools: {tools}.
@@ -65,7 +69,7 @@ Instructions: {instructions}.
 {memory_context if memory_context else ''}
 """.strip()
 
-    # 🧠 Optional: Print or log system_prompt if needed for debugging.
+    print("RAW PROMPT for Agent Context:", system_prompt)
 
     response = client.chat.completions.create(
         model=hat.get("model", "gpt-3.5-turbo"),
@@ -76,10 +80,9 @@ Instructions: {instructions}.
         temperature=0.7,
         max_tokens=1000
     )
-    print("RAW PROMPT for Agent Context:", system_prompt)
 
-    # 🛑 Return full response for better control later
     return response.choices[0].message.content
+
 
 def generate_team_from_goal(goal):
 

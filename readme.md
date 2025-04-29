@@ -188,6 +188,8 @@ MIT License — Open to extend and build upon.
 
 ### ***LLM Robustness***
 - Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
+- Tagging currently is saved as a csv list of strings rather than a list of strings. WIll reformat memory so that the list is just a clean list
+- Tagging has become alot more difficult. 
 
 ------------------------------------------------------------------------------------------ 
 
@@ -317,3 +319,78 @@ Here’s a concise step-by-step **guide** on how you integrated the **Critic Age
   - Enabling **`qa_loop`**
   - Adding the **Critic’s ID** to **`critics`**
 
+
+🧢 Hats Project: Mission Flow & QA System
+Our AI agent system is structured for clear mission-driven collaboration, with automatic quality control.
+
+✅ Here's how it works:
+
+🎯 Full Team Mission Flow
+mermaid
+Copy
+Edit
+flowchart TD
+  Start["🎯 Mission Start (Goal Given)"]
+  BuildTeam["🧢 Assemble Hats (Storyteller, Critic)"]
+  Storyteller["📜 Storyteller Generates Output"]
+  Critic["🧑‍⚖️ Critic Reviews Output"]
+  RevisionNeeded{❓ Revision Needed?}
+  Retry["🔄 Storyteller Retries Based on Feedback"]
+  Approve["✅ Critic Approves"]
+  Debrief["📜 Generate Mission Debrief"]
+  Awards["🏆 Agent Awards Ceremony"]
+  Reflections["🎤 Final Agent Reflections"]
+  Archive["🗂️ Save Mission Archive (with Reflections)"]
+  End["🏁 Mission Complete"]
+
+  Start --> BuildTeam
+  BuildTeam --> Storyteller
+  Storyteller --> Critic
+  Critic --> RevisionNeeded
+  RevisionNeeded -- Yes --> Retry
+  Retry --> Critic
+  RevisionNeeded -- No --> Approve
+  Approve --> Debrief
+  Debrief --> Awards
+  Awards --> Reflections
+  Reflections --> Archive
+  Archive --> End
+🔁 QA Loop Detail (Critic Review and Retry Mechanism)
+mermaid
+Copy
+Edit
+flowchart TD
+  StartQA["📜 Storyteller Output"]
+  CriticQA["🧑‍⚖️ Critic Reviews"]
+  RevisionNeededQA{❓ Revision Required?}
+  RetryQA["🔄 Storyteller Retries"]
+  ReCriticQA["🧑‍⚖️ Critic Re-Reviews"]
+  ApprovedQA["✅ Critic Approves"]
+  ManualReviewQA["👤 Manual User Review (Approve/Retry)"]
+
+  StartQA --> CriticQA
+  CriticQA --> RevisionNeededQA
+  RevisionNeededQA -- Yes --> RetryQA
+  RetryQA --> ReCriticQA
+  ReCriticQA --> RevisionNeededQA
+  RevisionNeededQA -- No --> ApprovedQA
+  RevisionNeededQA -- No Tag/Error --> ManualReviewQA
+🧠 Key System Features:
+🎯 Goal-driven Missions: Every team works toward a defined user goal.
+
+👥 Modular Agents (Hats): Each agent has a distinct role (Storyteller, Critic, Planner, etc).
+
+🧠 Autonomous QA: Critic agents enforce quality, retry agents if needed, or request human review.
+
+📜 Mission Logs: Full conversation history is saved.
+
+📜 Mission Debrief: LLM summarizes how the mission went.
+
+🏆 Agent Awards: MVP and Outstanding Contributor are recognized.
+
+🎤 Final Reflections: Each agent shares a short reflection on the mission.
+
+🗂️ Full Archive: Every mission (goal, log, debrief, agent reflections) is archived as a JSON file for history.
+
+✅ This structure creates an autonomous, explainable, memory-enabled AI team —
+perfect for future multi-mission orchestration.
