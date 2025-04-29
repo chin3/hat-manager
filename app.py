@@ -12,7 +12,6 @@ from hat_manager import (
     list_hats_by_team,
     load_hat,
     save_hat,
-    create_hat_from_prompt,
     ollama_llm,
     get_vector_db_for_hat,
     search_memory,
@@ -25,16 +24,12 @@ import openai
 import os
 from dotenv import load_dotenv
 
+from prompts import generate_openai_response, generate_team_from_goal
 from ui import show_hat_sidebar, show_hat_selector
 from actions import (
     ask_for_prompt,
     handle_prompt,
     save_edited_json,
-    wear_hat_action_button,
-    edit_hat_action_ui,
-    save_hat_action_ui,
-    save_schedule_action,
-    handle_hat_selection
 )
 
 from flow import run_team_flow
@@ -43,7 +38,7 @@ from utils import format_tags_for_display, generate_unique_hat_id, current_times
 
 load_dotenv()
 # Set your OpenAI API key
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Ensure hat_manager.py exists and provides these functions/objects
 # It should handle file operations, LLM calls, etc.
@@ -52,7 +47,6 @@ try:
         list_hats,
         load_hat,
         save_hat,
-        create_hat_from_prompt,
         ollama_llm # Assuming this is your LLM instance
     )
 except ImportError:
@@ -150,147 +144,146 @@ async def create_blank_hat():
 
 
 
-def generate_openai_response(prompt: str, hat: dict):
-    """
-    Generates an AI response using the Hat schema for context.
-    Supports instructions, tools, role, and memory injection.
-    """
+# def generate_openai_response(prompt: str, hat: dict):
+#     """
+#     Generates an AI response using the Hat schema for context.
+#     Supports instructions, tools, role, and memory injection.
+#     """
 
-    hat_name = hat.get('name', 'Unnamed Agent')
-    hat_id = hat.get('hat_id')
-    instructions = hat.get('instructions', '')
-    role = hat.get('role', 'agent')
-    tools = ", ".join(hat.get('tools', [])) or "none"
+#     hat_name = hat.get('name', 'Unnamed Agent')
+#     hat_id = hat.get('hat_id')
+#     instructions = hat.get('instructions', '')
+#     role = hat.get('role', 'agent')
+#     tools = ", ".join(hat.get('tools', [])) or "none"
 
-    # 🧠 Fetch relevant memories
-    memory_context = ""
-    relevant_memories = search_memory(hat_id, prompt, k=3)
-    if relevant_memories:
-        formatted = "\n".join([
-            f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
-            for doc, meta in relevant_memories if meta and doc
-        ])
-        memory_context = f"\n\nRelevant Memories:\n{formatted}"
-    relationship_context = ""
+#     # 🧠 Fetch relevant memories
+#     memory_context = ""
+#     relevant_memories = search_memory(hat_id, prompt, k=3)
+#     if relevant_memories:
+#         formatted = "\n".join([
+#             f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
+#             for doc, meta in relevant_memories if meta and doc
+#         ])
+#         memory_context = f"\n\nRelevant Memories:\n{formatted}"
+#     relationship_context = ""
 
-    relationships = hat.get("relationships", [])
-    if relationships:
-        related_hats_info = []
-        for rel_id in relationships:
-            try:
-                rel_hat = load_hat(rel_id)
-                rel_name = rel_hat.get("name", rel_id)
-                rel_desc = rel_hat.get("description", "No description provided.")
-                rel_tools_list = rel_hat.get("tools", [])
-                rel_tools = ", ".join(rel_tools_list) if rel_tools_list else "none"
+#     relationships = hat.get("relationships", [])
+#     if relationships:
+#         related_hats_info = []
+#         for rel_id in relationships:
+#             try:
+#                 rel_hat = load_hat(rel_id)
+#                 rel_name = rel_hat.get("name", rel_id)
+#                 rel_desc = rel_hat.get("description", "No description provided.")
+#                 rel_tools_list = rel_hat.get("tools", [])
+#                 rel_tools = ", ".join(rel_tools_list) if rel_tools_list else "none"
 
-                related_hats_info.append(f"- @{rel_id}: \"{rel_desc}\" (Tools: {rel_tools})")
-            except Exception as e:
-                related_hats_info.append(f"- @{rel_id}: (Details not found)")
+#                 related_hats_info.append(f"- @{rel_id}: \"{rel_desc}\" (Tools: {rel_tools})")
+#             except Exception as e:
+#                 related_hats_info.append(f"- @{rel_id}: (Details not found)")
 
-        # Only add this context if at least one relationship is valid
-        if related_hats_info:
-            relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(related_hats_info) + "\nMention them using @ if you need assistance!"
 
-    # 📝 System Prompt Enriched
-    system_prompt = f"""
-You are a {role} agent named '{hat_name}'.
-Your tools: {tools}.
-Instructions: {instructions}.
-{relationship_context}
-{memory_context if memory_context else ''}
-""".strip()
+#         if related_hats_info:
+#             relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(related_hats_info) + "\nMention them using @ if you need assistance!"
 
-    # 🧠 Optional: Print or log system_prompt if needed for debugging.
+#     system_prompt = f"""
+# You are a {role} agent named '{hat_name}'.
+# Your tools: {tools}.
+# Instructions: {instructions}.
+# {relationship_context}
+# {memory_context if memory_context else ''}
+# """.strip()
 
-    response = client.chat.completions.create(
-        model=hat.get("model", "gpt-3.5-turbo"),
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7,
-        max_tokens=1000
-    )
-    print("RAW PROMPT for Agent Context:", system_prompt)
+#     # 🧠 Optional: Print or log system_prompt if needed for debugging.
 
-    # 🛑 Return full response for better control later
-    return response.choices[0].message.content
+#     response = client.chat.completions.create(
+#         model=hat.get("model", "gpt-3.5-turbo"),
+#         messages=[
+#             {"role": "system", "content": system_prompt},
+#             {"role": "user", "content": prompt}
+#         ],
+#         temperature=0.7,
+#         max_tokens=1000
+#     )
+#     print("RAW PROMPT for Agent Context:", system_prompt)
 
-def generate_team_from_goal(goal):
+#     # 🛑 Return full response for better control later
+#     return response.choices[0].message.content
 
-    # Dynamic team_id
-    team_id = f"auto_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+# def generate_team_from_goal(goal):
 
-    system_prompt = f"""
-    You are an AI that builds specialized multi-agent teams ("Hats") for complex tasks.
+#     # Dynamic team_id
+#     team_id = f"auto_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-    Each Hat must include:
-    - hat_id: short and unique (e.g., planner_{team_id})
-    - name: human-friendly name
-    - model: gpt-3.5-turbo
-    - role: planner, summarizer, critic, tool, researcher
-    - instructions: specific task details
-    - tools: [] or tool names
-    - relationships: [] or related hat_ids this agent collaborates with
-    - team_id: "{team_id}"
-    - flow_order: 1, 2, 3...
-    - qa_loop: true/false
-    - critics: hat_ids that review this hat
-    - active: true/false
-    - memory_tags: ["tag1", "tag2"]
-    - retry_limit: 1-3
-    - description: 1-line purpose
+#     system_prompt = f"""
+#     You are an AI that builds specialized multi-agent teams ("Hats") for complex tasks.
 
-    ### Goal:
-    {goal}
+#     Each Hat must include:
+#     - hat_id: short and unique (e.g., planner_{team_id})
+#     - name: human-friendly name
+#     - model: gpt-3.5-turbo
+#     - role: planner, summarizer, critic, tool, researcher
+#     - instructions: specific task details
+#     - tools: [] or tool names
+#     - relationships: [] or related hat_ids this agent collaborates with
+#     - team_id: "{team_id}"
+#     - flow_order: 1, 2, 3...
+#     - qa_loop: true/false
+#     - critics: hat_ids that review this hat
+#     - active: true/false
+#     - memory_tags: ["tag1", "tag2"]
+#     - retry_limit: 1-3
+#     - description: 1-line purpose
 
-    ### Example:
-    [
-      {{
-        "hat_id": "planner_{team_id}",
-        "name": "Planning Agent",
-        "model": "gpt-3.5-turbo",
-        "role": "planner",
-        "instructions": "Break down tasks.",
-        "tools": [],
-        "relationships": ["summarizer_{team_id}"],
-        "team_id": "{team_id}",
-        "flow_order": 1,
-        "qa_loop": false,
-        "critics": [],
-        "active": true,
-        "memory_tags": ["planning"],
-        "retry_limit": 1,
-        "description": "Plans tasks for the team."
-      }},
-      ...
-    ]
+#     ### Goal:
+#     {goal}
 
-    Output valid JSON. Include diverse roles/tools relevant to the goal.
-    """
+#     ### Example:
+#     [
+#       {{
+#         "hat_id": "planner_{team_id}",
+#         "name": "Planning Agent",
+#         "model": "gpt-3.5-turbo",
+#         "role": "planner",
+#         "instructions": "Break down tasks.",
+#         "tools": [],
+#         "relationships": ["summarizer_{team_id}"],
+#         "team_id": "{team_id}",
+#         "flow_order": 1,
+#         "qa_loop": false,
+#         "critics": [],
+#         "active": true,
+#         "memory_tags": ["planning"],
+#         "retry_limit": 1, 
+#         "description": "Plans tasks for the team."
+#       }},
+#       ...
+#     ]
 
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"My goal: {goal}"}
-        ],
-        temperature=0.7,
-        max_tokens=1200
-    )
+#     Output valid JSON. Include diverse roles/tools relevant to the goal.
+#     """
 
-    result_text = response.choices[0].message.content
+#     response = client.chat.completions.create(
+#         model="gpt-3.5-turbo",
+#         messages=[
+#             {"role": "system", "content": system_prompt},
+#             {"role": "user", "content": f"My goal: {goal}"}
+#         ],
+#         temperature=0.7,
+#         max_tokens=1200
+#     )
 
-    try:
-        match = re.search(r"\[.*\]", result_text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        else:
-            raise ValueError("No valid JSON team found in response.")
-    except Exception as e:
-        print("Error parsing team:", e)
-        return []
+#     result_text = response.choices[0].message.content
+
+#     try:
+#         match = re.search(r"\[.*\]", result_text, re.DOTALL)
+#         if match:
+#             return json.loads(match.group(0))
+#         else:
+#             raise ValueError("No valid JSON team found in response.")
+#     except Exception as e:
+#         print("Error parsing team:", e)
+#         return []
 
 async def handle_hat_mention(trigger_hat_id, trigger_message, target_hat_id, hats_list):
     # Load target hat data
@@ -358,6 +351,13 @@ async def handle_message(message: cl.Message):
             return
         elif content_lower == "approve":
             await cl.Message(content="✅ Output approved by user! Team flow complete.").send()
+            previous_hat = cl.user_session.get("previous_hat")
+            if previous_hat:
+                cl.user_session.set("current_hat", previous_hat)
+                cl.user_session.set("editing_hat_id", previous_hat.get("hat_id"))
+                await cl.Message(content=f"🎩 Resuming with hat: `{previous_hat.get('name', 'Unknown Hat')}`.").send()
+            else:
+                await cl.Message(content="⚠️ No previous hat found.").send()
             return
         else:
             await cl.Message(content="❓ Invalid response. Please type `approve` or `retry`.").send()
@@ -454,12 +454,24 @@ async def handle_message(message: cl.Message):
             await cl.Message(content="📅 No Hats scheduled yet.").send()
     
     elif content_lower.startswith("run team "):
-        team_id = content.split(" ", 2)[2].strip()
-        if team_id:
-            await cl.Message(content=f"🚀 Running team flow for `{team_id}`...").send()
-            await run_team_flow(team_id, "Start a research summary on AI in healthcare")# HARDCODED TEAM FLOW. Still sick though!
-        else:
-            await cl.Message(content="❌ Usage: `run team <team_id>`").send()
+        parts = message.content.split(" ", 2)  # Do not lowercase here, keep original case
+        if len(parts) < 3:
+            await cl.Message(content="❌ Usage: `run team <team_id> [optional team goal]`").send()
+            return
+
+        team_id = parts[2].strip().split(" ")[0]  # First word after 'run team' = team_id
+        goal_description = " ".join(parts[2].strip().split(" ")[1:]).strip()  # The rest is optional goal
+
+        if not team_id:
+            await cl.Message(content="❌ Usage: `run team <team_id> [optional team goal]`").send()
+            return
+
+        # Default fallback goal if none specified
+        if not goal_description:
+            goal_description = "Start a research summary on AI in healthcare"
+
+        await cl.Message(content=f"🚀 Running team flow for `{team_id}`...\n\n**Goal:** {goal_description}").send()
+        await run_team_flow(team_id, goal_description)
         return
     
     elif content_lower.startswith("view team "):

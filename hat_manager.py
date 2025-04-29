@@ -65,7 +65,7 @@ def search_memory(hat_id, query, k=10, tag_filter=None):
     # Manual filtering on CSV tags until manaul based
     filtered_results = []
     for doc, meta in zip(docs_list, metas_list):
-        tags_str = meta.get('tags', '')
+        tags_str = (meta or {}).get('tags', '')
         tags_list = [t.strip() for t in tags_str.split(",") if t] if isinstance(tags_str, str) else []
 
         if tag_filter is None or tag_filter in tags_list:
