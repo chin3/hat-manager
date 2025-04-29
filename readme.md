@@ -38,6 +38,11 @@ Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrat
   - Sidebar showing Hats, Teams, and TODOs.
   - Wear, Edit, and Schedule Hats via action buttons.
   - JSON view of Hats for easy manual tweaking.
+  - [x] **@Mention Hats**: User calls Hats via @name inline. 4/29/2025
+  - [x] **Memory Tagging**: Allow tag-based retrieval and filtering. tag last as <tag name>
+  - [x] **Agent Reflection**: Agents at the end of critic/qa loop critique and provide feedback and lessons learned. 
+  - [x] **Mission Debrief at the end**: Shows agents summary of the conversation at the end
+  - [x] **AGENT MVP AWARD**: We must reward our agents for their hard work!
 
 ---
 
@@ -190,7 +195,118 @@ MIT License — Open to extend and build upon.
 - Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
 - Tagging currently is saved as a csv list of strings rather than a list of strings. WIll reformat memory so that the list is just a clean list
 - Tagging has become alot more difficult. 
+------------------------------------------------------------------------------------------
+Absolutely! Here's a clean and professional `README.md` tailored to your GitHub Codespaces + Chainlit + Chroma + Python devcontainer setup:
 
+---
+
+```markdown
+# 🧠 Hat Manager – Dev Container Setup
+
+Welcome to the **Hat Manager** project! This repo uses a fully-configured [GitHub Codespaces](https://github.com/features/codespaces) development environment for seamless local or cloud-based Python AI development with **Chainlit**, **ChromaDB**, and **SQLite**.
+
+---
+
+## 🚀 Quick Start (in GitHub Codespaces)
+
+1. Click **`Code > Codespaces > Create codespace on main`**
+2. GitHub will:
+   - Build a custom container with Python 3.11
+   - Install SQLite ≥ 3.35
+   - Auto-install all Python dependencies
+3. Once it loads, run:
+   ```bash
+   chainlit run app.py
+   ```
+
+That’s it! You’re up and running in a reproducible AI dev environment.
+
+---
+
+## 🛠 DevContainer Overview
+
+This project uses:
+
+- **Python 3.11**
+- **Chainlit** – LLM-powered UI framework
+- **ChromaDB** – Local vector database
+- **SQLite 3.35+** – Required for Chroma
+- Fully preinstalled in a custom Codespace container
+
+📁 `.devcontainer/` contains:
+
+- `devcontainer.json` – Config for Codespaces + VS Code
+- `Dockerfile` – Installs Python, SQLite, and system deps
+
+---
+
+## 🔍 Key Commands
+
+### 🧪 Run your app:
+```bash
+chainlit run app.py
+```
+
+### 🔎 Check environment:
+```bash
+python --version
+sqlite3 --version
+which chainlit
+```
+
+### 💾 Install extra dependencies:
+Add to your `postCreateCommand` or create a `requirements.txt`.
+
+---
+
+## 🧰 Requirements (if running locally)
+
+To run without Codespaces:
+- Python 3.11+
+- SQLite ≥ 3.35
+- Install dependencies:
+  ```bash
+  pip install chainlit chromadb
+  ```
+
+---
+
+## 🧼 Reset Your Devcontainer
+
+If something breaks:
+- From GitHub: **Codespaces → ... → Rebuild Container**
+- Or inside Codespaces:
+  - `Cmd+Shift+P` (or `F1`) → “Dev Containers: Rebuild Container”
+
+---
+
+## 🤝 Contributing
+
+1. Fork this repo
+2. Clone & open in Codespaces
+3. Make your changes in `/workspaces/hat-manager`
+4. Push to your branch and open a PR
+
+---
+
+## 📦 Future Ideas
+
+- Add `requirements.txt` or `poetry.lock` for more structured dependency control
+- Add a frontend layer (React/Tailwind) for a custom Chainlit UI
+- Use `start.sh` to auto-launch Chainlit on boot
+
+---
+
+## 💬 Need Help?
+
+Feel free to open an issue or ping [@chin3](https://github.com/chin3) for setup support or ideas!
+
+---
+```
+
+---
+
+Would you like a one-liner badge at the top for “Open in GitHub Codespaces”? I can generate the exact markdown for that too.
 ------------------------------------------------------------------------------------------ 
 
 # 🧠 Hat Memory System Documentation
