@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 async def finalize_team_flow(conversation_log, mission_success, revision_required, goal_description, team_id):
     log_text = "\n\n".join([
@@ -341,57 +340,3 @@ async def handle_qa_loop(hat, team_hats, conversation_log, retry_counts, retry_l
         return True
 
     return False
-
-
-
-def generate_team_from_goal(goal):
-    system_prompt = """
-    You are an AI that creates AI agent teams for complex tasks. Each agent (Hat) has a unique role.
-    
-    Based on the goal, define a team with:
-    - hat_id
-    - name
-    - role (planner, summarizer, critic, tool_agent)
-    - model (gpt-3.5 or gpt-4)
-    - instructions
-    - tools (list)
-    - flow_order (number)
-    - qa_loop (true/false)
-    - team_id ("auto_team")
-
-    Output valid JSON. Example:
-    [
-      {
-        "hat_id": "planner",
-        "name": "Planning Agent",
-        "role": "planner",
-        "model": "gpt-3.5",
-        "instructions": "Break tasks into steps and assign to the summarizer.",
-        "tools": [],
-        "flow_order": 1,
-        "qa_loop": false,
-        "team_id": "auto_team"
-      }
-    ]
-    """
-
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"My goal: {goal}"}
-        ],
-        temperature=0.5,
-        max_tokens=1200
-    )
-    
-    result_text = response.choices[0].message.content
-    try:
-        match = re.search(r"\[.*\]", result_text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        else:
-            raise ValueError("No valid JSON team found in response.")
-    except Exception as e:
-        print("Error parsing team:", e)
-        return []
