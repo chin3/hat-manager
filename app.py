@@ -11,6 +11,7 @@ from hat_manager import (
     list_hats,
     list_hats_by_team,
     load_hat,
+    normalize_hat,
     save_hat,
     ollama_llm,
     get_vector_db_for_hat,
@@ -30,6 +31,7 @@ from actions import (
     ask_for_prompt,
     handle_prompt,
     save_edited_json,
+    save_team_action
 )
 
 from flow import finalize_team_flow, run_team_flow
@@ -37,17 +39,12 @@ from flow import finalize_team_flow, run_team_flow
 from utils import format_tags_for_display, generate_unique_hat_id, current_timestamp, format_memory_entry, merge_tags
 
 load_dotenv()
-# Set your OpenAI API key
-# client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# Ensure hat_manager.py exists and provides these functions/objects
-# It should handle file operations, LLM calls, etc.
 try:
     from hat_manager import (
         list_hats,
         load_hat,
         save_hat,
-        ollama_llm # Assuming this is your LLM instance
+       # ollama_llm # Assuming this is your LLM instance
     )
 except ImportError:
     print("Error: Could not import from hat_manager.py.")
@@ -59,8 +56,9 @@ except ImportError:
     create_hat_from_prompt = lambda prompt, llm: {"hat_id": "error", "name": "Error Hat"}
     ollama_llm = None
     
-
-
+#HELPER FOR TEAMS saves the proposed team in the session so it can be reused. 
+def load_team_from_ids(hat_ids):
+    return [load_hat(hat_id) for hat_id in hat_ids]
 
 @cl.on_chat_start
 async def main():
@@ -142,148 +140,6 @@ async def create_blank_hat():
     except Exception as e:
         await cl.Message(content=f"❌ Failed to save blank hat: {e}").send()
 
-
-
-# def generate_openai_response(prompt: str, hat: dict):
-#     """
-#     Generates an AI response using the Hat schema for context.
-#     Supports instructions, tools, role, and memory injection.
-#     """
-
-#     hat_name = hat.get('name', 'Unnamed Agent')
-#     hat_id = hat.get('hat_id')
-#     instructions = hat.get('instructions', '')
-#     role = hat.get('role', 'agent')
-#     tools = ", ".join(hat.get('tools', [])) or "none"
-
-#     # 🧠 Fetch relevant memories
-#     memory_context = ""
-#     relevant_memories = search_memory(hat_id, prompt, k=3)
-#     if relevant_memories:
-#         formatted = "\n".join([
-#             f"{meta.get('role', 'unknown').capitalize()} ({meta.get('timestamp', 'no time')}): {doc}"
-#             for doc, meta in relevant_memories if meta and doc
-#         ])
-#         memory_context = f"\n\nRelevant Memories:\n{formatted}"
-#     relationship_context = ""
-
-#     relationships = hat.get("relationships", [])
-#     if relationships:
-#         related_hats_info = []
-#         for rel_id in relationships:
-#             try:
-#                 rel_hat = load_hat(rel_id)
-#                 rel_name = rel_hat.get("name", rel_id)
-#                 rel_desc = rel_hat.get("description", "No description provided.")
-#                 rel_tools_list = rel_hat.get("tools", [])
-#                 rel_tools = ", ".join(rel_tools_list) if rel_tools_list else "none"
-
-#                 related_hats_info.append(f"- @{rel_id}: \"{rel_desc}\" (Tools: {rel_tools})")
-#             except Exception as e:
-#                 related_hats_info.append(f"- @{rel_id}: (Details not found)")
-
-
-#         if related_hats_info:
-#             relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(related_hats_info) + "\nMention them using @ if you need assistance!"
-
-#     system_prompt = f"""
-# You are a {role} agent named '{hat_name}'.
-# Your tools: {tools}.
-# Instructions: {instructions}.
-# {relationship_context}
-# {memory_context if memory_context else ''}
-# """.strip()
-
-#     # 🧠 Optional: Print or log system_prompt if needed for debugging.
-
-#     response = client.chat.completions.create(
-#         model=hat.get("model", "gpt-3.5-turbo"),
-#         messages=[
-#             {"role": "system", "content": system_prompt},
-#             {"role": "user", "content": prompt}
-#         ],
-#         temperature=0.7,
-#         max_tokens=1000
-#     )
-#     print("RAW PROMPT for Agent Context:", system_prompt)
-
-#     # 🛑 Return full response for better control later
-#     return response.choices[0].message.content
-
-# def generate_team_from_goal(goal):
-
-#     # Dynamic team_id
-#     team_id = f"auto_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-#     system_prompt = f"""
-#     You are an AI that builds specialized multi-agent teams ("Hats") for complex tasks.
-
-#     Each Hat must include:
-#     - hat_id: short and unique (e.g., planner_{team_id})
-#     - name: human-friendly name
-#     - model: gpt-3.5-turbo
-#     - role: planner, summarizer, critic, tool, researcher
-#     - instructions: specific task details
-#     - tools: [] or tool names
-#     - relationships: [] or related hat_ids this agent collaborates with
-#     - team_id: "{team_id}"
-#     - flow_order: 1, 2, 3...
-#     - qa_loop: true/false
-#     - critics: hat_ids that review this hat
-#     - active: true/false
-#     - memory_tags: ["tag1", "tag2"]
-#     - retry_limit: 1-3
-#     - description: 1-line purpose
-
-#     ### Goal:
-#     {goal}
-
-#     ### Example:
-#     [
-#       {{
-#         "hat_id": "planner_{team_id}",
-#         "name": "Planning Agent",
-#         "model": "gpt-3.5-turbo",
-#         "role": "planner",
-#         "instructions": "Break down tasks.",
-#         "tools": [],
-#         "relationships": ["summarizer_{team_id}"],
-#         "team_id": "{team_id}",
-#         "flow_order": 1,
-#         "qa_loop": false,
-#         "critics": [],
-#         "active": true,
-#         "memory_tags": ["planning"],
-#         "retry_limit": 1, 
-#         "description": "Plans tasks for the team."
-#       }},
-#       ...
-#     ]
-
-#     Output valid JSON. Include diverse roles/tools relevant to the goal.
-#     """
-
-#     response = client.chat.completions.create(
-#         model="gpt-3.5-turbo",
-#         messages=[
-#             {"role": "system", "content": system_prompt},
-#             {"role": "user", "content": f"My goal: {goal}"}
-#         ],
-#         temperature=0.7,
-#         max_tokens=1200
-#     )
-
-#     result_text = response.choices[0].message.content
-
-#     try:
-#         match = re.search(r"\[.*\]", result_text, re.DOTALL)
-#         if match:
-#             return json.loads(match.group(0))
-#         else:
-#             raise ValueError("No valid JSON team found in response.")
-#     except Exception as e:
-#         print("Error parsing team:", e)
-#         return []
 
 async def handle_hat_mention(trigger_hat_id, trigger_message, target_hat_id, hats_list):
     # Load target hat data
@@ -514,25 +370,17 @@ async def handle_message(message: cl.Message):
         story_prompt = parts[3].strip()
 
         # Create a unique team_id based on time
-        from datetime import datetime
         team_id = f"story_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-        # Build the team hats dynamically
+        
         storyteller_hat = load_hat("storyteller_hat")
-        critic_hat = load_hat("critic")  # <-- use your actual Critic hat ID here
-
-        # Assign this new team_id to the hats
-        storyteller_hat["team_id"] = team_id
-        storyteller_hat["flow_order"] = 1
-        storyteller_hat["qa_loop"] = False
-
-        critic_hat["team_id"] = team_id
-        critic_hat["flow_order"] = 2
+        critic_hat = load_hat("critic")
+        # Build the team hats dynamically
+        storyteller_hat = normalize_hat(storyteller_hat, team_id=team_id, flow_order=1)
+        critic_hat = normalize_hat(critic_hat, team_id=team_id, flow_order=2)
         critic_hat["qa_loop"] = True
 
-        # Save copies of these hats to bind them into this team
-        save_hat(f"{storyteller_hat['hat_id']}_{team_id}", storyteller_hat)
-        save_hat(f"{critic_hat['hat_id']}_{team_id}", critic_hat)
+        save_hat(storyteller_hat["hat_id"], storyteller_hat)
+        save_hat(critic_hat["hat_id"], critic_hat)
 
         await cl.Message(content=f"✨ Created new Story Team: `{team_id}`.\n\n**Mission:** {story_prompt}").send()
         await run_team_flow(team_id, story_prompt)
@@ -593,31 +441,45 @@ async def handle_message(message: cl.Message):
     elif cl.user_session.get("awaiting_team_goal"):
         cl.user_session.set("awaiting_team_goal", False)
         goal_description = content.strip()
+        
+        # After user describes their goal
         await cl.Message(content="🤖 Building your AI team based on your goal...").send()
 
-        # Call the Orchestrator to propose a team
-        team_proposal = generate_team_from_goal(goal_description)
-        
-        # Save it in session for review/edit
-        cl.user_session.set("proposed_team", team_proposal)
+        # 🧹 Step 1: Generate team
+        team_hat_ids = await generate_team_from_goal(goal_description)
 
-        # Present the proposal
-        team_summary = "\n".join([f"- {hat['name']} ({hat['hat_id']}) → Role: {hat.get('role', 'N/A')}" for hat in team_proposal])
+        # 🧹 Step 2: Load full hats now (only once)
+        proposed_team = load_team_from_ids(team_hat_ids)
+        cl.user_session.set("proposed_team", proposed_team)
+
+        team_summary = "\n".join(
+            f"- {hat['name']} ({hat['hat_id']}) → Role: {hat.get('role', 'N/A')}"
+            for hat in proposed_team
+        )
         await cl.Message(content=f"📋 Proposed Team:\n{team_summary}\n\nApprove with `save team`, or modify manually.").send()
+        await cl.Message(
+                content="✅ Team ready! Would you like to save it?",
+                actions=[
+                    Action(
+                        name="save_team_action",
+                        label="💾 Save Team",
+                        payload={"action": "save_team"}
+                    )
+                ]
+            ).send()
+
         return
     elif content_lower == "save team":
         proposed_team = cl.user_session.get("proposed_team")
+
         if not proposed_team:
             await cl.Message(content="❌ No team proposal found. Use `create team` first.").send()
-            return
-        
-        # Save each hat
-        for hat in proposed_team:
-            save_hat(hat["hat_id"], hat)
-        
-        await cl.Message(content="✅ Team saved! Use `wear <hat_id>` to activate a Hat, or `view schedule` to assign times.").send()
-        await show_hat_sidebar()
-        await show_hat_selector()
+        else:
+            for hat in proposed_team:
+                save_hat(hat["hat_id"], normalize_hat(hat))
+            await cl.Message(content="✅ Team saved! Use `wear <hat_id>` to activate a Hat, or `view schedule` to assign times.").send()
+            await show_hat_sidebar()
+            await show_hat_selector()
         return
     elif content_lower == "show team json":
         proposed_team = cl.user_session.get("proposed_team")
@@ -679,6 +541,22 @@ async def handle_message(message: cl.Message):
         mission_list = "\n".join([f"- `{f}`" for f in sorted(mission_files)])
         await cl.Message(content=f"🗂️ **Saved Missions:**\n\n{mission_list}").send()
         return
+    #Clone a hat using hat_templates.py establish parent child relationship with basehat.
+    elif content_lower.startswith("new from base "):
+        base_hat_id = content.split(" ", 3)[3].strip()
+        if not base_hat_id:
+            await cl.Message(content="❌ Usage: new from base <base_hat_id>").send()
+            return
+
+        try:
+            from hat_templates import clone_hat_template  # import at top if not already
+
+            new_hat = clone_hat_template(base_hat_id)
+            await cl.Message(content=f"🎩 Cloned Hat `{base_hat_id}` ➔ `{new_hat['hat_id']}`\nYou can now `wear {new_hat['hat_id']}`.").send()
+            await show_hat_sidebar()
+            await show_hat_selector()
+        except Exception as e:
+            await cl.Message(content=f"❌ Failed to clone base Hat: {e}").send()
 
         # --- Fallback / General Chat ---
     else:
