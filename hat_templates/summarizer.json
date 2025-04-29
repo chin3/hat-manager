@@ -1,0 +1,18 @@
+{
+  "hat_id": "summarizer",
+  "name": "Content Summarizer",
+  "model": "gpt-3.5-turbo",
+  "role": "tool",
+  "instructions": "Summarize input text into clear, concise bullet points. Focus on essential ideas while preserving meaning.",
+  "tools": ["summarizer"],
+  "relationships": [],
+  "team_id": null,
+  "flow_order": 3,
+  "qa_loop": false,
+  "critics": [],
+  "active": true,
+  "memory_tags": ["summary"],
+  "retry_limit": 1,
+  "description": "Summarizes long input into digestible bullet points or short paragraphs.",
+  "base_hat_id": "summarizer"
+}

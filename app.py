@@ -11,6 +11,7 @@ from hat_manager import (
     list_hats,
     list_hats_by_team,
     load_hat,
+    normalize_hat,
     save_hat,
     ollama_llm,
     get_vector_db_for_hat,
@@ -30,6 +31,7 @@ from actions import (
     ask_for_prompt,
     handle_prompt,
     save_edited_json,
+    save_team_action
 )
 
 from flow import finalize_team_flow, run_team_flow
@@ -54,8 +56,9 @@ except ImportError:
     create_hat_from_prompt = lambda prompt, llm: {"hat_id": "error", "name": "Error Hat"}
     ollama_llm = None
     
-
-
+#HELPER FOR TEAMS saves the proposed team in the session so it can be reused. 
+def load_team_from_ids(hat_ids):
+    return [load_hat(hat_id) for hat_id in hat_ids]
 
 @cl.on_chat_start
 async def main():
@@ -368,23 +371,16 @@ async def handle_message(message: cl.Message):
 
         # Create a unique team_id based on time
         team_id = f"story_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-        # Build the team hats dynamically
+        
         storyteller_hat = load_hat("storyteller_hat")
-        critic_hat = load_hat("critic")  # <-- use your actual Critic hat ID here
-
-        # Assign this new team_id to the hats
-        storyteller_hat["team_id"] = team_id
-        storyteller_hat["flow_order"] = 1
-        storyteller_hat["qa_loop"] = False
-
-        critic_hat["team_id"] = team_id
-        critic_hat["flow_order"] = 2
+        critic_hat = load_hat("critic")
+        # Build the team hats dynamically
+        storyteller_hat = normalize_hat(storyteller_hat, team_id=team_id, flow_order=1)
+        critic_hat = normalize_hat(critic_hat, team_id=team_id, flow_order=2)
         critic_hat["qa_loop"] = True
 
-        # Save copies of these hats to bind them into this team
-        save_hat(f"{storyteller_hat['hat_id']}_{team_id}", storyteller_hat)
-        save_hat(f"{critic_hat['hat_id']}_{team_id}", critic_hat)
+        save_hat(storyteller_hat["hat_id"], storyteller_hat)
+        save_hat(critic_hat["hat_id"], critic_hat)
 
         await cl.Message(content=f"✨ Created new Story Team: `{team_id}`.\n\n**Mission:** {story_prompt}").send()
         await run_team_flow(team_id, story_prompt)
@@ -445,31 +441,45 @@ async def handle_message(message: cl.Message):
     elif cl.user_session.get("awaiting_team_goal"):
         cl.user_session.set("awaiting_team_goal", False)
         goal_description = content.strip()
+        
+        # After user describes their goal
         await cl.Message(content="🤖 Building your AI team based on your goal...").send()
 
-        # Call the Orchestrator to propose a team
-        team_proposal = generate_team_from_goal(goal_description)
-        
-        # Save it in session for review/edit
-        cl.user_session.set("proposed_team", team_proposal)
+        # 🧹 Step 1: Generate team
+        team_hat_ids = await generate_team_from_goal(goal_description)
 
-        # Present the proposal
-        team_summary = "\n".join([f"- {hat['name']} ({hat['hat_id']}) → Role: {hat.get('role', 'N/A')}" for hat in team_proposal])
+        # 🧹 Step 2: Load full hats now (only once)
+        proposed_team = load_team_from_ids(team_hat_ids)
+        cl.user_session.set("proposed_team", proposed_team)
+
+        team_summary = "\n".join(
+            f"- {hat['name']} ({hat['hat_id']}) → Role: {hat.get('role', 'N/A')}"
+            for hat in proposed_team
+        )
         await cl.Message(content=f"📋 Proposed Team:\n{team_summary}\n\nApprove with `save team`, or modify manually.").send()
+        await cl.Message(
+                content="✅ Team ready! Would you like to save it?",
+                actions=[
+                    Action(
+                        name="save_team_action",
+                        label="💾 Save Team",
+                        payload={"action": "save_team"}
+                    )
+                ]
+            ).send()
+
         return
     elif content_lower == "save team":
         proposed_team = cl.user_session.get("proposed_team")
+
         if not proposed_team:
             await cl.Message(content="❌ No team proposal found. Use `create team` first.").send()
-            return
-        
-        # Save each hat
-        for hat in proposed_team:
-            save_hat(hat["hat_id"], hat)
-        
-        await cl.Message(content="✅ Team saved! Use `wear <hat_id>` to activate a Hat, or `view schedule` to assign times.").send()
-        await show_hat_sidebar()
-        await show_hat_selector()
+        else:
+            for hat in proposed_team:
+                save_hat(hat["hat_id"], normalize_hat(hat))
+            await cl.Message(content="✅ Team saved! Use `wear <hat_id>` to activate a Hat, or `view schedule` to assign times.").send()
+            await show_hat_sidebar()
+            await show_hat_selector()
         return
     elif content_lower == "show team json":
         proposed_team = cl.user_session.get("proposed_team")
@@ -531,6 +541,22 @@ async def handle_message(message: cl.Message):
         mission_list = "\n".join([f"- `{f}`" for f in sorted(mission_files)])
         await cl.Message(content=f"🗂️ **Saved Missions:**\n\n{mission_list}").send()
         return
+    #Clone a hat using hat_templates.py establish parent child relationship with basehat.
+    elif content_lower.startswith("new from base "):
+        base_hat_id = content.split(" ", 3)[3].strip()
+        if not base_hat_id:
+            await cl.Message(content="❌ Usage: new from base <base_hat_id>").send()
+            return
+
+        try:
+            from hat_templates import clone_hat_template  # import at top if not already
+
+            new_hat = clone_hat_template(base_hat_id)
+            await cl.Message(content=f"🎩 Cloned Hat `{base_hat_id}` ➔ `{new_hat['hat_id']}`\nYou can now `wear {new_hat['hat_id']}`.").send()
+            await show_hat_sidebar()
+            await show_hat_selector()
+        except Exception as e:
+            await cl.Message(content=f"❌ Failed to clone base Hat: {e}").send()
 
         # --- Fallback / General Chat ---
     else:

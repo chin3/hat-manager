@@ -1,0 +1,18 @@
+{
+  "hat_id": "critic",
+  "name": "Quality Assurance Critic",
+  "model": "gpt-3.5-turbo",
+  "role": "critic",
+  "instructions": "Critique outputs based on goal alignment, clarity, and creativity. Tag results as #APPROVED, #REVISION_REQUIRED, or #REJECTED with a short explanation.",
+  "tools": [],
+  "relationships": [],
+  "team_id": "team_critic",
+  "flow_order": 99,
+  "qa_loop": true,
+  "critics": [],
+  "active": true,
+  "memory_tags": ["review", "quality-assurance"],
+  "retry_limit": 2,
+  "description": "Reviews outputs, ensures quality standards, and triggers retries if needed.",
+  "base_hat_id": "critic"
+}

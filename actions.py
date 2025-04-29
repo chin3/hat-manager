@@ -3,7 +3,7 @@ import chainlit as cl
 from chainlit.action import Action
 import json
 
-from hat_manager import create_hat_from_prompt, load_hat, save_hat
+from hat_manager import create_hat_from_prompt, load_hat, save_hat, normalize_hat
 from ui import show_hat_sidebar, show_hat_selector
 
 # --- Schedule Actions ---
@@ -69,6 +69,20 @@ async def wear_hat(hat_id: str):
         await cl.Message(content=f"❌ Error: Hat file for `{hat_id}` not found.").send()
     except Exception as e:
         await cl.Message(content=f"❌ Couldn't load hat `{hat_id}`: {e}").send()
+        
+@cl.action_callback("save_team_action")
+async def save_team_action(action: cl.Action):
+    proposed_team = cl.user_session.get("proposed_team")
+    if not proposed_team:
+        await cl.Message(content="❌ No team to save.").send()
+        return
+    
+    for hat in proposed_team:
+        save_hat(hat["hat_id"], normalize_hat(hat))
+    
+    await cl.Message(content="✅ Team saved successfully! You can now `wear <hat_id>` or `run team <team_id>`.").send()
+    await show_hat_sidebar()
+    await show_hat_selector()
 
 @cl.action_callback("edit_hat_ui")
 async def edit_hat_action_ui(action: Action):

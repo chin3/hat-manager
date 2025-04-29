@@ -6,7 +6,7 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-from hat_manager import build_hat_schema_prompt, load_hat, search_memory, save_hat
+from hat_manager import build_hat_schema_prompt, load_hat, normalize_hat, search_memory, save_hat
 import chainlit as cl
 
 load_dotenv()
@@ -17,49 +17,6 @@ load_dotenv()
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def normalize_hat(hat: dict, team_id: str = None, flow_order: int = None) -> dict:
-    """
-    Standardizes a Hat structure:
-    - Suffixes hat_id with team_id if provided.
-    - Stores original 'base_hat_id'.
-    - Ensures default fields exist (tools, relationships, etc.).
-    """
-    hat = hat.copy()  # Safe copy to avoid modifying originals
-
-    # Extract or create base_hat_id
-    base_hat_id = hat.get("hat_id", "unnamed")
-
-    # Always store base_hat_id
-    hat["base_hat_id"] = base_hat_id
-
-    # Update hat_id with team_id if applicable
-    if team_id:
-        hat["hat_id"] = f"{base_hat_id}_{team_id}"
-        hat["team_id"] = team_id
-
-    # Defaults for missing fields
-    hat.setdefault("flow_order", flow_order or 1)
-    hat.setdefault("qa_loop", False)
-    hat.setdefault("relationships", [])
-    hat.setdefault("tools", [])
-    hat.setdefault("critics", [])
-    hat.setdefault("active", True)
-    hat.setdefault("retry_limit", 1)
-    hat.setdefault("memory_tags", [])
-    hat.setdefault("model", "gpt-3.5-turbo")
-    hat.setdefault("description", "No description provided.")
-    hat.setdefault("role", "agent")
-    hat.setdefault("instructions", "No instructions provided.")
-
-    # Standardize lists
-    if isinstance(hat["tools"], str):
-        hat["tools"] = [tool.strip() for tool in hat["tools"].split(",") if tool.strip()]
-    if isinstance(hat["relationships"], str):
-        hat["relationships"] = [rel.strip() for rel in hat["relationships"].split(",") if rel.strip()]
-    if isinstance(hat["critics"], str):
-        hat["critics"] = [c.strip() for c in hat["critics"].split(",") if c.strip()]
-
-    return hat
 
 
 
