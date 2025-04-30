@@ -177,6 +177,13 @@ async def run_team_flow(team_id, goal_description):
                 "Be strict: Only approve if Goal Coverage is 9/10 or higher, and other categories are reasonably strong (8+/10). Otherwise, request revision."
             )
             response_text = generate_openai_response(critic_input, hat)
+            await cl.Message(content=f"🧢 **{hat_name}** reviewed:\n{response_text}").send()#comment out if you want to remove critic response
+            conversation_log.append({ #logs critic response
+                "hat_name": hat_name,
+                "hat_id": hat_id,
+                "input": critic_input,
+                "output": response_text
+            })
             if "#APPROVED" in response_text:
                 mission_success = True
                 await cl.Message(content="✅ Critic approved!").send()
