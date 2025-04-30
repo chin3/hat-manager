@@ -158,6 +158,12 @@ async def handle_hat_mention(trigger_hat_id, trigger_message, target_hat_id, hat
     add_memory_to_hat(target_hat_id, response, role="bot", tags=target_hat.get("memory_tags", []), session=cl.user_session)
 
     await cl.Message(content=f"🧢 @{target_hat['name']} replied:\n{response}").send()
+    await handle_multiple_mentions(
+        trigger_hat_id=target_hat_id,
+        trigger_message=response,
+        hats_list=hats_list
+    )
+
     return True
 async def handle_multiple_mentions(trigger_hat_id, trigger_message, hats_list):
     """

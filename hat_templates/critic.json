@@ -11,7 +11,10 @@
   "qa_loop": true,
   "critics": [],
   "active": true,
-  "memory_tags": ["review", "quality-assurance"],
+  "memory_tags": [
+    "review",
+    "quality-assurance"
+  ],
   "retry_limit": 2,
   "description": "Reviews outputs, ensures quality standards, and triggers retries if needed.",
   "base_hat_id": "critic"

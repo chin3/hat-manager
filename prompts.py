@@ -131,10 +131,17 @@ def generate_openai_response(prompt: str, hat: dict):
         for rel in hat["relationships"]:
             try:
                 h = load_hat(rel)
-                info.append(f"- @{rel}: \"{h.get('description', '...')}\" (Tools: {', '.join(h.get('tools', [])) or 'none'})")
+                info.append(
+                    f"- To call this helper, include `@{rel}` in your reply.\n"
+                    f"  • @{rel} = {h.get('name')}: {h.get('description', '...')} (Tools: {', '.join(h.get('tools', [])) or 'none'})"
+                )
             except:
                 info.append(f"- @{rel}: (Details not found)")
-        relationship_context = "\n\nYou have collaborators available:\n" + "\n".join(info)
+        relationship_context = (
+            "\n\nYou can collaborate with the following agents by @mentioning their ID in your response:\n"
+            + "\n".join(info)
+        )
+        
 
     system_prompt = f"""
 You are a {role} agent named '{hat_name}'.
@@ -142,6 +149,7 @@ Your tools: {tools}.
 Instructions: {instructions}.{relationship_context}{memory_context}
 """.strip()
 
+    print(system_prompt)
     return call_openai_llm([
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}

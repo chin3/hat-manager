@@ -11,7 +11,10 @@
   "qa_loop": false,
   "critics": [],
   "active": true,
-  "memory_tags": ["research", "knowledge"],
+  "memory_tags": [
+    "research",
+    "knowledge"
+  ],
   "retry_limit": 1,
   "description": "Researches and summarizes important facts or trends to inform team decisions.",
   "base_hat_id": "researcher"
