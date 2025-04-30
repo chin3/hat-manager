@@ -20,7 +20,6 @@ from hat_manager import (
     clear_memory
 )
 
-import openai
 
 import os
 from dotenv import load_dotenv

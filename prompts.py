@@ -150,13 +150,10 @@ async def generate_openai_response_with_system(user_prompt: str, system_prompt: 
 async def generate_team_from_goal(goal: str):
     """
     Generates a team of Hats from a goal using OpenAI and saves them.
-    Enforces multiple diverse Hats (planner, researcher, critic, etc.).
+    Enforces at least 3 Hats with unique roles. Retries up to 3x, falls back to default if needed.
     """
 
-    # Build unique team ID
     team_id = f"auto_team_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-    # Build system prompt
     system_prompt = f"""
 {build_hat_schema_prompt()}
 
@@ -176,41 +173,52 @@ You are an AI responsible for designing a specialized multi-agent team ("Hats") 
 {goal}
 
 Respond ONLY with a valid JSON array [] of Hats.
-"""
+""".strip()
 
-    # Query OpenAI
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"My goal: {goal}"}
-        ],
-        temperature=0.5,
-        max_tokens=1800
-    )
+    for attempt in range(3):  # Retry up to 3x
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"My goal: {goal}"}
+                ],
+                temperature=0.5,
+                max_tokens=1800
+            )
+            result_text = response.choices[0].message.content
 
-    result_text = response.choices[0].message.content
+            match = re.search(r"\[.*\]", result_text, re.DOTALL)
+            if not match:
+                raise ValueError("No valid JSON array found.")
+            hats = json.loads(match.group(0))
 
-    # Parse JSON safely
-    try:
-        match = re.search(r"\[.*\]", result_text, re.DOTALL)
-        if not match:
-            raise ValueError("No valid JSON array found in model response.")
-        hats = json.loads(match.group(0))
-    except Exception as e:
-        print(f"❌ Failed to parse team JSON: {e}")
-        return []
+            # ✅ Check constraints
+            roles = [hat.get("role", "") for hat in hats]
+            if len(hats) >= 3 and len(set(roles)) >= 3:
+                saved_ids = []
+                for hat in hats:
+                    normalized = normalize_hat(hat, team_id=team_id)
+                    save_hat(normalized["hat_id"], normalized)
+                    saved_ids.append(normalized["hat_id"])
+                return saved_ids
 
-    # Normalize and save each Hat
-    saved_hat_ids = []
-    for raw_hat in hats:
-        normalized_hat = normalize_hat(raw_hat)
-        hat_id = normalized_hat.get("hat_id")
-        if hat_id:
-            save_hat(hat_id, normalized_hat)
-            saved_hat_ids.append(hat_id)
+        except Exception as e:
+            print(f"⚠️ Team generation attempt {attempt+1} failed: {e}")
 
-    return saved_hat_ids
+    # ⛑️ Fallback — use templates
+    fallback_ids = []
+    base_ids = ["planner", "researcher", "critic"]
+    for i, base in enumerate(base_ids):
+        try:
+            base_hat = load_hat(base)
+            normalized = normalize_hat(base_hat, team_id=team_id, flow_order=i + 1)
+            save_hat(normalized["hat_id"], normalized)
+            fallback_ids.append(normalized["hat_id"])
+        except Exception as e:
+            print(f"❌ Failed to load fallback hat `{base}`: {e}")
+
+    return fallback_ids
 
 def create_hat_from_prompt(prompt, llm_function):
     return llm_function(prompt)
