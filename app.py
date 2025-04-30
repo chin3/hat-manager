@@ -205,7 +205,7 @@ async def handle_message(message: cl.Message):
         cl.user_session.set("awaiting_user_approval", False)
         if content_lower == "retry":
             await cl.Message(content="🔄 User requested retry. Re-running team...").send()
-            await run_team_flow(cl.user_session.get("pending_team_id"), cl.user_session.get("pending_critique_input"))
+            await run_team_flow(cl.user_session.get("pending_team_id"), cl.user_session.get("pending_goal_description"))
             return
         elif content_lower == "approve":      
             team_id = cl.user_session.get("pending_team_id")
