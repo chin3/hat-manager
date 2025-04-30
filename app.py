@@ -4,8 +4,11 @@ from chainlit.input_widget import TextInput, Select, Tags # Keep only one import
 from chainlit.element import Text # Explicit imports can be clearer
 from chainlit.action import Action # Explicit import
 import re
+from hat_templates import clone_hat_template
 
 from datetime import datetime
+
+from hat_templates import clone_hat_template  # import at top if not already
 
 from hat_manager import (
     list_hats,
@@ -20,7 +23,6 @@ from hat_manager import (
     clear_memory
 )
 
-import openai
 
 import os
 from dotenv import load_dotenv
@@ -87,16 +89,16 @@ async def wear_hat(hat_id: str):
                 f"🧢 Now wearing: `{hat.get('name', hat_id)}`\n\n"
                 f"To edit this Hat, you can:\n"
                 f"• Type `edit {hat_id}` then paste JSON\n"
-                f"• Click the **Edit This Hat** button below"
+                # f"• Click the **Edit This Hat** button below"
             ),
-            actions=[
-                Action(
-                    name="edit_hat_ui", # Matches the callback name
-                    label="📝 Edit This Hat (UI)",
-                    value="edit", # Value isn't strictly needed if using payload
-                    payload={"hat_id": hat_id} # Send hat_id to the callback
-                )
-            ]
+            # actions=[
+            #     Action(
+            #         name="edit_hat_ui", # Matches the callback name
+            #         label="📝 Edit This Hat (UI)",
+            #         value="edit", # Value isn't strictly needed if using payload
+            #         payload={"hat_id": hat_id} # Send hat_id to the callback
+            #     )
+            # ]
         ).send()
 
         # Don't necessarily need to show selector again immediately after wearing,
@@ -278,7 +280,72 @@ async def handle_message(message: cl.Message):
                 await cl.Message(content="```json\n" + json.dumps(current_hat, indent=2) + "\n```").send()
         else:
             await cl.Message(content="Usage: `edit <hat_id>`").send()
-            
+    elif content_lower.startswith("add qa to "):
+        parts = content.split(" ", 3)
+        if len(parts) < 4:
+            await cl.Message(content="❌ Usage: `add qa to <hat_id>`").send()
+            return
+
+        target_hat_id = parts[3].strip()
+        try:
+            target_hat = load_hat(target_hat_id)
+            team_id = target_hat.get("team_id")
+            if not team_id:
+                await cl.Message(content="❌ Hat is not part of a team. Add it to a team first.").send()
+                return
+
+            # Add QA loop settings
+            target_hat["qa_loop"] = True
+            target_hat["retry_limit"] = target_hat.get("retry_limit", 2)
+            critic_id = f"critic_{team_id}"
+            if "critics" not in target_hat or not isinstance(target_hat["critics"], list):
+                target_hat["critics"] = []
+
+            if critic_id not in target_hat["critics"]:  # 🔧 Add critic reference if missing
+                target_hat["critics"].append(critic_id)
+
+            save_hat(target_hat_id, normalize_hat(target_hat, team_id=team_id, flow_order=target_hat.get("flow_order", 1)))
+            await cl.Message(content=f"✅ QA loop enabled for `{target_hat_id}` with critic `{critic_id}`.").send()
+
+            # Add critic hat if not already in disk
+            if critic_id not in list_hats():
+                new_critic = clone_hat_template("critic", new_suffix=team_id, team_id=team_id, flow_order=99)
+                save_hat(new_critic["hat_id"], new_critic)
+                await cl.Message(content=f"🎩 Cloned and saved Critic Hat: `{new_critic['hat_id']}`").send()
+
+            await show_hat_sidebar()
+            await show_hat_selector()
+
+        except Exception as e:
+            await cl.Message(content=f"❌ Failed to add QA loop to `{target_hat_id}`: {e}").send() 
+    elif content_lower.startswith("remove critic from team "):
+        parts = content.split(" ", 4)
+        if len(parts) < 5:
+            await cl.Message(content="❌ Usage: `remove critic from team <team_id>`").send()
+            return
+
+        team_id = parts[4].strip()
+        try:
+            hats = list_hats_by_team(team_id)
+            critic_id = f"critic_{team_id}"
+            filtered_hats = [hat for hat in hats if hat["hat_id"] != critic_id]
+
+            if len(filtered_hats) == len(hats):
+                await cl.Message(content=f"⚠️ No critic found in team `{team_id}`.").send()
+            else:
+                path = f"./hats/{critic_id}.json"
+                if os.path.exists(path):
+                    os.remove(path)
+                    await cl.Message(content=f"🗑️ Removed Critic Hat `{critic_id}` from disk.").send()
+                else:
+                    await cl.Message(content=f"⚠️ Critic file `{critic_id}.json` not found.").send()
+
+            await show_hat_sidebar()
+            await show_hat_selector()
+
+        except Exception as e:
+            await cl.Message(content=f"❌ Failed to remove critic from team `{team_id}`: {e}").send()
+    
     elif content_lower.startswith("view memories"):
         parts = content.split(" ", 2)
         tag = parts[2].strip() if len(parts) > 2 else None
@@ -549,7 +616,6 @@ async def handle_message(message: cl.Message):
             return
 
         try:
-            from hat_templates import clone_hat_template  # import at top if not already
 
             new_hat = clone_hat_template(base_hat_id)
             await cl.Message(content=f"🎩 Cloned Hat `{base_hat_id}` ➔ `{new_hat['hat_id']}`\nYou can now `wear {new_hat['hat_id']}`.").send()
