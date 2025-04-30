@@ -85,20 +85,47 @@ The app features a responsive UI powered by Chainlit with:
 
 ---
 
-## 📦 Local Dev Setup
+## ⚙️ Setup Instructions
 
-> 🧰 [Insert DevContainer / Codespaces Setup Instructions Here]  
-> **`#LOCAL_SETUP_PLACEHOLDER`** ← Replace this comment with your instructions.
+### 🟢 Codespaces
 
-```bash
-# Example basic setup
-git clone https://github.com/yourname/hat-manager.git
-cd hat-manager
-pip install -r requirements.txt
-OPENAI_API_KEY=sk-xxxxxx  # add to .env
-chainlit run app.py
-```
+1. **Open in Codespace** (GitHub Codespaces)
+2. **Create a `.env` file** with your OpenAI API Key  
+   – Reference the format in `env.sample.txt`
+3. **Copy Hat Template Files**  
+   – Move all `.json` files from `hat_template/` into the `hats/` directory
+4. **Install dependencies**  
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. **Run the app**  
+   ```bash
+   chainlit run app.py
+   ```
 
+---
+
+### 💻 Local Development
+
+1. **Clone this repo**
+   ```bash
+   git clone https://github.com/your-username/hat-manager.git
+   ```
+2. **Navigate into the project folder**
+   ```bash
+   cd hat-manager
+   ```
+3. **Run the dev container** *(if using VS Code Dev Containers or Docker)*
+4. **Create a `.env` file**  
+   – Add your `OPENAI_API_KEY`
+5. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+6. **Run the app**
+   ```bash
+   chainlit run app.py
+   ```
 
 ---
 

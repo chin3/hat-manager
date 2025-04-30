@@ -17,32 +17,49 @@ async def show_hat_sidebar():
             elements.append(Text(content=f"- `wear {hat_id}`"))
     else:
         elements.append(Text(content="_(No hats found yet)_"))
-
+    current_hat = cl.user_session.get("current_hat")
+    # hat_display = ( [WIP]
+    #     f"🎩 **Currently Wearing:** `{current_hat.get('name', current_hat.get('hat_id'))}`"
+    #     if current_hat else "🎩 **Currently Wearing:** _None_"
+    # )
     elements += [
+        # Text(content=hat_display),
         Text(content="---"),
-        Text(content="### ➕ Create"),
-        Text(content="- `new blank` — Empty Hat"),
-        Text(content="- `new from prompt` — Describe"),
-        Text(content="- `create team` — Auto-build a team"),
+        Text(content="### 🎩 Hat Management"),
+        Text(content="- `wear <hat_id>` — Activate a specific Hat"),
+        Text(content="- `new blank` — Create an empty Hat"),
+        Text(content="- `new from prompt` — Generate Hat from a description"),
+        Text(content="- `new from base <base_hat_id>` — Clone a Hat template"),
+        Text(content="- `edit <hat_id>` — Paste JSON to edit a Hat"),
+        Text(content="- `current hat` — Show which Hat you're wearing"),
+        Text(content="- `@hat_id` — Trigger another Hat via inline mention ex. `@hat_id <prompt>`"),
+
         Text(content="---"),
-        Text(content="### 👥 Teams"),
-        Text(content="- `run team <team_id>` — Run multi-Hat flow"),
-        Text(content="- `view team <team_id>` — Show team Hats"),
-        Text(content="- `save team` — Save proposed team"),
-        Text(content="- `show team json` — View team JSON"),
+        Text(content="### 👥 Team Commands"),
+        Text(content="- `create team` — Auto-generate Hats for a goal"),
+        Text(content="- `new story team <prompt>` — Build Storyteller + Critic team"),
+        Text(content="- `run team <team_id> [goal]` — Execute multi-Hat mission"),
+        Text(content="- `view team <team_id>` — See Hats in a team"),
+        Text(content="- `save team` — Save the currently proposed team"),
+        Text(content="- `show team json` — Show JSON of proposed team"),
+
         Text(content="---"),
-        Text(content="### 🧠 Memory"),
-        Text(content="- `view memories` — Show top memories"),
-        Text(content="- `clear memories` — Delete all memories"),
-        Text(content="- `export memories <hat_id>` — Export JSON"),
-        Text(content="- `debug memories` — Raw memory debug"),
+        Text(content="### 🧠 Memory Commands"),
+        Text(content="- `view memories` — Show memory for current Hat"),
+        Text(content="- `view memories <tag>` — Filter memories by tag"),
+        Text(content="- `tag last as <tag>` — Tag the last memory entry"),
+        Text(content="- `clear memories` — Delete all memory for current Hat"),
+        Text(content="- `debug memories` — Show raw memory data in CLI"),
+
         Text(content="---"),
-        Text(content="### 🕒 Scheduling"),
-        Text(content="- `set schedule` — Schedule Hat switching"),
-        Text(content="- `view schedule` — View schedules"),
-        Text(content="- `current hat` — Show active Hat"),
+        Text(content="### 🕒 Scheduling & Utilities"),
+        Text(content="- `set schedule` — Schedule Hat activation by time"),
+        Text(content="- `view schedule` — See your Hat schedule"),
+        Text(content="- `view missions` — Show archived team missions"),
+        Text(content="- `help` — List all available commands"),
+
         Text(content="---"),
-        Text(content="### ✅ Active Teams")
+        Text(content="### ✅ Active Teams")  # This is dynamically populated below
     ]
 
     for team_id in team_ids:
@@ -53,12 +70,32 @@ async def show_hat_sidebar():
     elements += [
         Text(content="---"),
         Text(content="### 🔥 TODOs / Next Steps"),
-        Text(content="- `user approval` after Critic — Await 'approve'/'retry' ✔️"),
-        Text(content="- Visual polish for logs (emojis/dividers) ✔️"),
-        Text(content="- `import memories` command — #TODO"),
-        Text(content="- Add `run again` / `create new team` buttons — #TODO"),
-        Text(content="- QA edge fallback: prompt user after retry limit — #TODO"),
-        Text(content="- Flow visualizer: plan graphical flow editor — #TODO"),
+
+        # ✅ Implemented
+        Text(content="✅ `user approval` after Critic — Await 'approve'/'retry'"),
+        Text(content="✅ Visual polish for logs (emojis/dividers)"),
+        Text(content="✅ @Mention chaining between Hats"),
+        Text(content="✅ Memory tagging and retrieval (`tag last as <tag>`)"),
+        Text(content="✅ `export memories <hat_id>` via UI"),
+        Text(content="✅ Per-Hat schedule support (`set schedule`)"),
+        Text(content="✅ Multi-Hat reflections + MVP Awards"),
+        Text(content="✅ Support `new from base <base_hat_id>` command"),
+
+        # 🔄 In Progress / Working
+        Text(content="🔄 QA fallback: Prompt user if retries exhausted"),
+        Text(content="🔄 `further run team enhancements"),
+
+        # ⏳ Planned
+        Text(content="⏳ `export memories` json? command"),
+        Text(content="⏳ `import memories` command"),
+        Text(content="⏳ `run again` button after team flow"),
+        Text(content="⏳ `create new team` button from goal"),
+        Text(content="⏳ Better error handling for failed JSON parsing"),
+        Text(content="⏳ Flow Chart Generator — Mermaid.js visualization of team structure"),
+        Text(content="⏳ Parallel Execution for Hats with same `flow_order`"),
+        Text(content="⏳ Tool integration (tools field schema is ready but not hydrated)"),
+        Text(content="⏳ Dynamic LLM usage per Hat (e.g. OpenAI vs Ollama hybrid flow)"),
+        Text(content="⏳ Copilot SDK / Agent Framework extension support (wear a Hat externally)")
     ]
 
     await cl.ElementSidebar.set_elements(elements)

@@ -55,15 +55,7 @@ async def wear_hat(hat_id: str):
                 f"🧢 Now wearing: `{hat.get('name', hat_id)}`\n\n"
                 f"To edit this Hat, you can:\n"
                 f"• Type `edit {hat_id}` then paste JSON\n"
-                f"• Click the **Edit This Hat** button below"
-            ),
-            actions=[
-                Action(
-                    name="edit_hat_ui",
-                    label="📝 Edit This Hat (UI)",
-                    payload={"hat_id": hat_id}
-                )
-            ]
+            )
         ).send()
     except FileNotFoundError:
         await cl.Message(content=f"❌ Error: Hat file for `{hat_id}` not found.").send()
