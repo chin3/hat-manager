@@ -161,7 +161,8 @@ You can extend or remix these templates to create your own agents or team config
    ```bash
    cd hat-manager
    ```
-3. **Run the dev container** *(if using VS Code Dev Containers or Docker)*
+3. **Copy Hat Template Files**  
+   – Move all `.json` files from `hat_template/` into the `hats/` directory
 4. **Create a `.env` file**  
    – Add your `OPENAI_API_KEY`
 5. **Install dependencies**
