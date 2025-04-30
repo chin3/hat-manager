@@ -1,21 +1,21 @@
 {
-  "hat_id": "planner_20250430093105",
-  "name": "Mission Planner Clone",
-  "model": "gpt-3.5-turbo",
-  "role": "planner",
-  "instructions": "Design structured plans, strategies, and roadmaps to achieve specified goals. Be clear, step-by-step, and anticipate risks. You must always call reseacher for help",
-  "tools": [],
-  "relationships": ["researcher_20250430093141"],
-  "team_id": "test_mention",
-  "flow_order": 1,
-  "qa_loop": false,
-  "critics": [],
-  "active": true,
-  "memory_tags": [
-    "planning",
-    "strategy"
-  ],
-  "retry_limit": 1,
-  "description": "Creates strategic plans and outlines to guide team missions.",
-  "base_hat_id": "planner"
-}
+    "hat_id": "planner",
+    "name": "Mission Planner Clone",
+    "model": "gpt-3.5-turbo",
+    "role": "planner",
+    "instructions": "Design structured plans, strategies, and roadmaps to achieve specified goals. Be clear, step-by-step, and anticipate risks.",
+    "tools": [],
+    "relationships": [],
+    "team_id": "dream_team",
+    "flow_order": 1,
+    "qa_loop": false,
+    "critics": [],
+    "active": true,
+    "memory_tags": [
+      "planning",
+      "strategy"
+    ],
+    "retry_limit": 1,
+    "description": "Creates strategic plans and outlines to guide team missions.",
+    "base_hat_id": "planner"
+  }

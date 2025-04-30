@@ -8,7 +8,7 @@
     "summarizer"
   ],
   "relationships": [],
-  "team_id": null,
+  "team_id": "dream_team",
   "flow_order": 3,
   "qa_loop": false,
   "critics": [],

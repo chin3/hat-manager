@@ -152,6 +152,18 @@ async def handle_hat_mention(trigger_hat_id, trigger_message, target_hat_id, hat
 
     # Generate response
     response = generate_openai_response(trigger_message, target_hat)
+    # Next Steps: Improve tagging for mentioned hats memories
+    # NEW: Save the mentioned hat's reply into the memory of the trigger hat
+    trigger_hat = next((h for h in hats_list if h['hat_id'] == trigger_hat_id), None)
+    if trigger_hat:
+        add_memory_to_hat(
+            trigger_hat_id,
+            f"@{target_hat['name']} replied:\n{response}",
+            role="bot",
+            tags=trigger_hat.get("memory_tags", []),
+            session=cl.user_session
+        )
+        print(f"📥 Also saved reply from @{target_hat['hat_id']} to @{trigger_hat_id}'s memory.")
 
     # Save memory
     add_memory_to_hat(target_hat_id, trigger_message, role="user", tags=target_hat.get("memory_tags", []),session=cl.user_session)
@@ -654,18 +666,5 @@ async def handle_message(message: cl.Message):
             await cl.Message(content=response_text).send()
 
             await handle_multiple_mentions(trigger_hat_id=current_hat.get("hat_id"), trigger_message=response_text, hats_list=[load_hat(hid) for hid in list_hats()])
-            #Save mentioned hats in memory of main hat
-            mentioned_hat_ids = set(re.findall(r"@(\w+)", response_text))
-            for target_hat_id in mentioned_hat_ids:
-                mentioned_hat = next((h for h in [load_hat(hid) for hid in list_hats()] if h['hat_id'] == target_hat_id), None)
-                if mentioned_hat:
-                    add_memory_to_hat(
-                        current_hat.get('hat_id'),
-                        f"@{mentioned_hat['name']} replied: {response_text}",
-                        role="bot",
-                        tags=current_hat.get("memory_tags", [])
-                        , session=cl.user_session
-                    )
-                    print(f"🔗 Saved @{mentioned_hat['hat_id']}'s reply ALSO in {current_hat.get('hat_id')}'s memory.")
         else:
             await cl.Message(content="No hat is currently active. Use `wear <hat_id>` or select one.").send()

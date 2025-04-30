@@ -6,7 +6,7 @@
   "instructions": "Critique outputs based on goal alignment, clarity, and creativity. Tag results as #APPROVED, #REVISION_REQUIRED, or #REJECTED with a short explanation.",
   "tools": [],
   "relationships": [],
-  "team_id": "team_critic",
+  "team_id": "dream_team",
   "flow_order": 99,
   "qa_loop": true,
   "critics": [],

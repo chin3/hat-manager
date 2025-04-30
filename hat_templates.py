@@ -4,7 +4,7 @@ import os
 import json
 from datetime import datetime
 from hat_manager import load_hat, save_hat, list_hats,normalize_hat
-
+#continue polishing base templates designs.
 def register_template(hat_id):
     """
     Marks an existing Hat as a base template (base_hat_id == hat_id, team_id=None).

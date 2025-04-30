@@ -160,7 +160,7 @@ async def run_team_flow(team_id, goal_description):
             critic_input = (
                 f"## Goal\n"
                 f"{goal_description}\n\n"
-                f"## Storyteller Output\n"
+                f"## Critic Review Target\n"
                 f"{current_input}\n\n"
                 f"## Instructions\n"
                 "First, rate the output across three categories from 1 to 10:\n"
@@ -175,6 +175,8 @@ async def run_team_flow(team_id, goal_description):
                 "- #REVISION_REQUIRED (minor improvements needed)\n"
                 "- #REJECTED (major issues).\n\n"
                 "Be strict: Only approve if Goal Coverage is 9/10 or higher, and other categories are reasonably strong (8+/10). Otherwise, request revision."
+                "--- End of Instructions ---\n\n"
+                "🧑‍⚖️ Critic Output:"
             )
             response_text = generate_openai_response(critic_input, hat)
             await cl.Message(content=f"🧢 **{hat_name}** reviewed:\n{response_text}").send()#comment out if you want to remove critic response

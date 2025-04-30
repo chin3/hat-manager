@@ -1,0 +1,21 @@
+{
+  "hat_id": "mention_researcher",
+  "name": "Information Researcher",
+  "model": "gpt-3.5-turbo",
+  "role": "researcher",
+  "instructions": "Research background knowledge, trends, or factual information related to a given topic. Return clear, concise findings in bullet points.",
+  "tools": [],
+  "relationships": [],
+  "team_id": "test_mention",
+  "flow_order": 2,
+  "qa_loop": false,
+  "critics": [],
+  "active": true,
+  "memory_tags": [
+    "research",
+    "knowledge"
+  ],
+  "retry_limit": 1,
+  "description": "Researches and summarizes important facts or trends to inform team decisions.",
+  "base_hat_id": "researcher"
+}
