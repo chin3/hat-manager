@@ -27,7 +27,7 @@ from hat_manager import (
 import os
 from dotenv import load_dotenv
 
-from prompts import generate_openai_response, generate_team_from_goal
+from prompts import generate_openai_response, generate_team_from_goal,openai_hat_generator
 from ui import show_hat_sidebar, show_hat_selector
 from actions import (
     ask_for_prompt,
@@ -253,7 +253,7 @@ async def handle_message(message: cl.Message):
     elif awaiting_hat_prompt:
         # Expecting description for a new hat
         # handle_prompt will set awaiting_hat_prompt to False
-        await handle_prompt(message, ollama_llm)
+        await handle_prompt(message, openai_hat_generator)
 
     # --- Command Handling ---
     elif content_lower == "new blank":
