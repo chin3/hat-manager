@@ -1,5 +1,5 @@
 
-# MadHatter — Modular AI Agent System for Chainlit  
+# Mad 🎩 Hatter — Modular AI Agent System for Chainlit  
 > **Microsoft AI Agents Hackathon Submission**  
 > A flexible orchestration framework where every agent wears a "Hat" — equipped with memory, identity, tools, and team logic.
 
@@ -67,11 +67,58 @@ The app features a responsive UI powered by Chainlit with:
 | Feature | Suggested Format | File |
 |--------|------------------|------|
 | 🔷 Chainlit UI + Sidebar | Screenshot | `./screenshots/ui_overview.png` |
-| Mentions | Screenshot | `./screenshots/debrief.png` |
+|  @Mentions | Screenshot | `./screenshots/mention.gif` |
 | 🤖 Multi-Agent Team Flow | GIF (team flow w/ approvals) | `./screenshots/team_flow.gif` |
-| 🧠 Viewing Hat Memory | Screenshot | `./screenshots/view_memory.png` |
+| 🧠 Viewing and Manage Hat Memory | Screenshot | `./screenshots/memory.gif` |
 | 🏆 Agent MVP Awards | Screenshot | `./screenshots/awards.png` |
 | 📋 Debrief Summary | Screenshot | `./screenshots/debrief.png` |
+| Reflections | Screenshot | `./screenshots/reflection.png` |
+
+---
+
+## 🧠 Hat JSON Schema
+
+Each Hat is a modular agent with its own identity, behavior, memory, and logic. Here's an example schema with descriptions:
+
+```jsonc
+{
+  "hat_id": "planner", // Unique identifier for the Hat
+  "name": "Mission Planner Clone", // Human-readable name
+  "model": "gpt-3.5-turbo", // LLM to use (e.g. OpenAI or local)
+  "role": "planner", // Role/purpose (planner, critic, summarizer, etc.)
+  "instructions": "Design structured plans, strategies, and roadmaps to achieve specified goals. Be clear, step-by-step, and anticipate risks.", // Prompt instructions given to the LLM
+  "tools": [], // Optional tool integrations (not yet implemented) [WIP]
+  "relationships": [], // List of other Hat IDs this one can call via @mention
+  "team_id": "dream_team", // ID of the team this Hat belongs to
+  "flow_order": 1, // Execution order within a team (lower runs first)
+  "qa_loop": false, // Whether this Hat's output should be reviewed by a Critic
+  "critics": [], // List of Critic Hat IDs (used if qa_loop is true)
+  "active": true, // Whether this Hat is currently in use [WIP]
+  "memory_tags": ["planning", "strategy"], // Default memory tags for saved interactions
+  "retry_limit": 1, // How many times to retry if a Critic requests revision
+  "description": "Creates strategic plans and outlines to guide team missions.", // Short explanation of this Hat's purpose
+  "base_hat_id": "planner" // Template ID this Hat was cloned from (if any)
+}
+```
+
+This schema enables flexible orchestration, personalized behavior, and future support for tool-calling, tagging, and collaboration across agents.
+
+---
+## 🎩 Built-in Hat Templates
+
+These JSON files define ready-to-use agent personas. You can clone, customize, or combine them to form collaborative teams.
+
+| File Name               | Description |
+|-------------------------|-------------|
+| `planner.json`          | 🧭 **Mission Planner** – Designs structured plans, strategies, and risk-aware roadmaps to achieve specific goals. |
+| `researcher.json`       | 🔍 **Information Researcher** – Gathers background knowledge, trends, or factual insights in bullet-point form. |
+| `critic.json`           | 🧑‍⚖️ **Quality Assurance Critic** – Reviews other Hats' outputs, scores them, and triggers retries when needed. |
+| `summarizer.json`       | ✂️ **Content Summarizer** – Condenses long input into clear, concise bullet points or short summaries. |
+| `storyteller_hat.json`  | 📖 **Storyteller Agent** – Creates cozy, imaginative stories with tone adapted to prompts (e.g., bedtime or fantasy). |
+| `mention_planner.json`  | 🧠 **Mentionable Planner** – Similar to the Mission Planner but explicitly calls other Hats (e.g., @researcher) when reasoning. |
+| `mention_researcher.json` | 🧠 **Mentionable Researcher** – Variant of the Researcher Hat, designed to be triggered via @mention by other agents. |
+
+You can extend or remix these templates to create your own agents or team configurations.
 
 ---
 
@@ -79,7 +126,7 @@ The app features a responsive UI powered by Chainlit with:
 
 - **Chainlit** — Conversational UI layer
 - **OpenAI** — LLM backend for smart reasoning. Currently Set to just use gpt-3.5-turbo but planned functionality/schema planned to change the model per hat
-- **Ollama** — Local model generation for Hat creation. Currently disabled for testing. Uses pt-3.5-turbo for consistency
+- **Ollama** — Local model generation for Hat creation. Currently disabled for hackathon. Uses gpt-3.5-turbo through the open ai api for ease of use 
 - **ChromaDB** — Per-agent vector memory persistence
 - **Python** — Orchestration + logic
 

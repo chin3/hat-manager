@@ -99,7 +99,7 @@ async def show_hat_sidebar():
     ]
 
     await cl.ElementSidebar.set_elements(elements)
-    await cl.ElementSidebar.set_title("Hat Manager")
+    await cl.ElementSidebar.set_title("Mad 🎩 Hatter")
 
 async def show_hat_selector():
     hats = list_hats()

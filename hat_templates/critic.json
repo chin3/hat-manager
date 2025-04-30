@@ -3,7 +3,7 @@
   "name": "Quality Assurance Critic",
   "model": "gpt-3.5-turbo",
   "role": "critic",
-  "instructions": "Critique outputs based on goal alignment, clarity, and creativity. Tag results as #APPROVED, #REVISION_REQUIRED, or #REJECTED with a short explanation.",
+  "instructions": "Critique outputs based on goal alignment, clarity, and creativity. Tag all results as #APPROVED, #REVISION_REQUIRED with specific feedback",
   "tools": [],
   "relationships": [],
   "team_id": "dream_team",
