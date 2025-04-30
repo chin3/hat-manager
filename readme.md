@@ -62,18 +62,17 @@ The app features a responsive UI powered by Chainlit with:
 
 ---
 
-## 📸 Screenshots & GIFs
+## 📸 Feature Showcase
 
-| Feature | Suggested Format | File |
-|--------|------------------|------|
-| 🔷 Chainlit UI + Sidebar | Screenshot | `./screenshots/ui_overview.png` |
-|  @Mentions | Screenshot | `./screenshots/mention.gif` |
-| 🤖 Multi-Agent Team Flow | GIF (team flow w/ approvals) | `./screenshots/team_flow.gif` |
-| 🧠 Viewing and Manage Hat Memory | Screenshot | `./screenshots/memory.gif` |
-| 🏆 Agent MVP Awards | Screenshot | `./screenshots/awards.png` |
-| 📋 Debrief Summary | Screenshot | `./screenshots/debrief.png` |
-| Reflections | Screenshot | `./screenshots/reflection.png` |
-
+| Feature | Preview |
+|--------|---------|
+| 🔷 Chainlit UI + Sidebar | ![](./screenshots/ui_overview.png) |
+| 🧠 Hat Memory Viewer     | ![](./screenshots/memory.gif)     |
+| 🤖 Multi-Agent Team Flow | ![](./screenshots/team_flow.gif)  |
+| 🏆 Agent MVP Awards      | ![](./screenshots/awards.png)     |
+| 📋 Debrief Summary       | ![](./screenshots/debrief.png)    |
+| @Mentions                | ![](./screenshots/mention.gif)    |
+| 🎤 Reflections           | ![](./screenshots/reflection.png) |
 ---
 
 ## 🧠 Hat JSON Schema
