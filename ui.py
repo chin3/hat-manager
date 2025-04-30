@@ -47,8 +47,8 @@ async def show_hat_sidebar():
 
     for team_id in team_ids:
         team_hats = list_hats_by_team(team_id)
-        hat_names = ", ".join([hat.get("name", "Unnamed") for hat in team_hats])
-        elements.append(Text(content=f"- `{team_id}`: {hat_names}"))
+        hat_ids = ", ".join([hat.get("hat_id", "unknown_hat") for hat in team_hats])
+        elements.append(Text(content=f"- `{team_id}`: {hat_ids}"))
 
     elements += [
         Text(content="---"),
