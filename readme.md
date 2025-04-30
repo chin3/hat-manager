@@ -355,3 +355,6 @@ Here’s a concise step-by-step **guide** on how you integrated the **Critic Age
   - Adding the **Critic’s ID** to **`critics`**
 
 
+🧠 Critics with qa_loop: true and no flow_order → used only for inline review
+
+🏁 Critics with flow_order: 99 → used at the end of the main team flow
