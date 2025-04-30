@@ -67,12 +67,12 @@ The app features a responsive UI powered by Chainlit with:
 | Feature | Preview |
 |--------|---------|
 | 🔷 Chainlit UI + Sidebar | ![](./screenshots/ui_overview.png) |
-| 🧠 Hat Memory Viewer     | ![](./screenshots/memory.gif)     |
+| 🧠 Hat Memory Viewer and Memory Tagging     | ![](./screenshots/memory.gif)     |
 | 🤖 Multi-Agent Team Flow | ![](./screenshots/team_flow.gif)  |
 | 🏆 Agent MVP Awards      | ![](./screenshots/awards.png)     |
 | 📋 Debrief Summary       | ![](./screenshots/debrief.png)    |
 | @Mentions                | ![](./screenshots/mention.gif)    |
-| 🎤 Reflections           | ![](./screenshots/reflection.png) |
+| 🎤 Reflections           | ![](./screenshots/reflections.png) |
 ---
 
 ## 🧠 Hat JSON Schema
