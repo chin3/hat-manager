@@ -6,7 +6,7 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-from hat_manager import build_hat_schema_prompt, load_hat, normalize_hat, search_memory, save_hat
+from hat_manager import build_hat_schema_prompt, ensure_schema_defaults, load_hat, normalize_hat, search_memory, save_hat
 import chainlit as cl
 
 load_dotenv()
@@ -63,7 +63,7 @@ def call_ollama_llm(prompt, model="llama3:8b", max_retries=3):
 
     raise Exception("Failed to get valid response from Ollama after retries.")
 
-
+##For use with Hat Generation
 def call_openai_llm(messages, model="gpt-3.5-turbo", temperature=0.7, max_tokens=1000):
     return client.chat.completions.create(
         model=model,
@@ -72,6 +72,15 @@ def call_openai_llm(messages, model="gpt-3.5-turbo", temperature=0.7, max_tokens
         max_tokens=max_tokens
     ).choices[0].message.content
 
+
+def openai_hat_generator(prompt):
+    system = build_hat_schema_prompt()
+    response = call_openai_llm([
+        {"role": "system", "content": system},
+        {"role": "user", "content": prompt}
+    ])
+    raw_hat = parse_llm_response_to_hat(response)
+    return ensure_schema_defaults(raw_hat)
 
 # -----------------------------
 # Application Logic

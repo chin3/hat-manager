@@ -1,7 +1,7 @@
 import datetime
 import re
 import json
-from hat_manager import list_hats_by_team, add_memory_to_hat, search_memory
+from hat_manager import list_hats_by_team, add_memory_to_hat, load_hat, search_memory
 from prompts import generate_openai_response, generate_openai_response_with_system
 from utils import generate_unique_hat_id
 
@@ -132,7 +132,14 @@ async def run_team_flow(team_id, goal_description):
     current_hat = cl.user_session.get("current_hat")
     cl.user_session.set("previous_hat", current_hat)
     # Load and sort the team hats based on flow_order
-    team_hats = list_hats_by_team(team_id)
+    team_hats = [
+        hat for hat in list_hats_by_team(team_id)
+        if not (hat.get("role") == "critic" and hat.get("flow_order") in [None, "", 0])
+    ]
+    for hat in team_hats:
+        if hat.get("role") == "critic" and not hat.get("flow_order"):
+            print(f"⚠️ QA-only critic `{hat['hat_id']}` will be excluded from flow.")
+
     team_hats = sorted(team_hats, key=lambda h: h.get("flow_order", 0))
 
     current_input = goal_description
@@ -170,10 +177,32 @@ async def run_team_flow(team_id, goal_description):
                 "Be strict: Only approve if Goal Coverage is 9/10 or higher, and other categories are reasonably strong (8+/10). Otherwise, request revision."
             )
             response_text = generate_openai_response(critic_input, hat)
-            if "#REVISION_REQUIRED" in response_text:
-                revision_required = True
             if "#APPROVED" in response_text:
                 mission_success = True
+                await cl.Message(content="✅ Critic approved!").send()
+                await cl.Message(content="🧑‍⚖️ Approve or Retry? Type `approve` or `retry`.").send()
+                cl.user_session.set("awaiting_user_approval", True)
+                cl.user_session.set("pending_critique_input", current_input)
+                cl.user_session.set("pending_team_id", team_id)
+                cl.user_session.set("pending_conversation_log", conversation_log)
+                cl.user_session.set("pending_mission_success", mission_success)
+                cl.user_session.set("pending_revision_required", revision_required)
+                cl.user_session.set("pending_goal_description", goal_description)
+                return  # ⛔ Pause flow for user decision
+            elif "#REVISION_REQUIRED" in response_text:
+                revision_required = True
+                await cl.Message(content="🔁 Final Critic requested revision. Awaiting your decision.").send()
+                await cl.Message(content="🧑‍⚖️ Approve or Retry? Type `approve` or `retry`.").send()
+                cl.user_session.set("awaiting_user_approval", True)
+                cl.user_session.set("pending_critique_input", current_input)
+                cl.user_session.set("pending_team_id", team_id)
+                cl.user_session.set("pending_conversation_log", conversation_log)
+                cl.user_session.set("pending_mission_success", mission_success)
+                cl.user_session.set("pending_revision_required", revision_required)
+                cl.user_session.set("pending_goal_description", goal_description)
+                return
+            else:
+                await cl.Message(content="⚠️ Final Critic did not tag properly. No user input prompted.").send()
                         
         else:
             response_text = generate_openai_response(current_input, hat)
@@ -194,75 +223,63 @@ async def run_team_flow(team_id, goal_description):
         })
 
         # Handle QA loop if enabled
-        if qa_loop:
-            handled = await handle_qa_loop(
-                hat, team_hats, conversation_log, retry_counts, retry_limit, team_id
-            )
-            if handled:
-                                # --- Save state before pausing for user approval ---
+        # If the current hat has QA enabled, run critic
+        if hat.get("qa_loop", False) and hat.get("critics"):
+            critic_id = hat["critics"][0]
+            critic_hat = load_hat(critic_id)
+
+            critic_input = response_text
+            critic_response = generate_openai_response(critic_input, critic_hat)
+
+            await cl.Message(content=f"🧑‍⚖️ **Critic `{critic_id}` reviewing `{hat_name}` output:**\n{critic_response}").send()
+
+            add_memory_to_hat(critic_id, critic_input, role="user")
+            add_memory_to_hat(critic_id, critic_response, role="bot")
+            if "#APPROVED" in critic_response:
+                mission_success = True
+                await cl.Message(content="✅ Critic approved!").send()
+                await cl.Message(content="🧑‍⚖️ Approve or Retry? Type `approve` or `retry`.").send()
+                cl.user_session.set("awaiting_user_approval", True)
+                cl.user_session.set("pending_critique_input", response_text)
+                cl.user_session.set("pending_team_id", team_id)
                 cl.user_session.set("pending_conversation_log", conversation_log)
                 cl.user_session.set("pending_mission_success", mission_success)
                 cl.user_session.set("pending_revision_required", revision_required)
                 cl.user_session.set("pending_goal_description", goal_description)
+                return
+            elif "#REVISION_REQUIRED" in critic_response:
+                revision_required = True
+                await cl.Message(content="🔁 Critic requested revision. Retrying...").send()
+                handled = await handle_qa_loop(
+                    hat, team_hats, conversation_log, retry_counts, retry_limit, team_id
+                )
+                if handled:
+                    cl.user_session.set("pending_conversation_log", conversation_log)
+                    cl.user_session.set("pending_mission_success", mission_success)
+                    cl.user_session.set("pending_revision_required", revision_required)
+                    cl.user_session.set("pending_goal_description", goal_description)
+                    cl.user_session.set("pending_team_id", team_id)
+                    return
+            else:
+                await cl.Message(content="⚠️ Critic did not tag properly. Manual review required.").send()
+                cl.user_session.set("awaiting_user_approval", True)
+                cl.user_session.set("pending_critique_input", response_text)
                 cl.user_session.set("pending_team_id", team_id)
-                return  # Pause here if QA loop is triggered
+                return
 
         # Pass the output to the next hat
         current_input = response_text
 
-    # --- Final Summary ---
-    log_text = "\n\n".join([
-        f"🧢 **{entry['hat_name']}**\n**Input:** {entry['input']}\n**Output:** {entry['output']}"
-        for entry in conversation_log
-    ])
-    await cl.Message(content=f"📜 **Full Team Conversation Log:**\n\n{log_text}").send()
+
     await cl.Message(content="✅ **Team flow completed successfully!**").send()
-    try:
-        mission_debrief_prompt = (
-            f"You are an AI mission analyst.\n\n"
-            f"Based on the following team conversation log, generate a clear, professional mission debrief.\n\n"
-            f"Focus on:\n"
-            f"- Goal Achievement\n"
-            f"- Teamwork dynamics (Storyteller, Critic)\n"
-            f"- Any improvements or challenges encountered\n"
-            f"- Overall mission outcome.\n\n"
-            f"Here is the conversation log:\n\n"
-            f"{log_text}\n\n"
-            f"Respond in a formal but friendly tone. Keep it concise."
-        )
+    await finalize_team_flow(
+                                conversation_log=conversation_log,
+                                mission_success=mission_success,
+                                revision_required=revision_required,
+                                goal_description=goal_description,
+                                team_id=team_id
+                            )
 
-        debrief_summary = generate_openai_response(mission_debrief_prompt, hat={"name": "Mission Analyst", "model": "gpt-3.5-turbo", "instructions": ""})
-
-        await cl.Message(content=f"📜 **Mission Debrief:**\n\n{debrief_summary}").send()
-        try:
-            # Count number of outputs from each agent
-            agent_contributions = {}
-            for entry in conversation_log:
-                hat_name = entry.get('hat_name', 'Unknown')
-                agent_contributions[hat_name] = agent_contributions.get(hat_name, 0) + 1
-
-            # Decide awards
-            if agent_contributions:
-                mvp_agent = max(agent_contributions.items(), key=lambda x: x[1])[0]  # Most active agent
-
-                awards_text = (
-                    "🎉 **Agent Awards Ceremony** 🎉\n\n"
-                    f"🏆 **MVP (Most Valuable Agent):** {mvp_agent}\n"
-                )
-
-                if len(agent_contributions) > 1:
-                    sorted_agents = sorted(agent_contributions.items(), key=lambda x: x[1], reverse=True)
-                    runner_up = sorted_agents[1][0]
-                    awards_text += f"🥈 **Outstanding Contributor:** {runner_up}\n"
-
-                awards_text += "\n🎖️ Thanks to all agents for their teamwork!"
-
-                await cl.Message(content=awards_text).send()
-        except Exception as e:
-            await cl.Message(content=f"⚠️ Failed to generate Agent Awards: {e}").send()        
-
-    except Exception as e:
-        await cl.Message(content=f"⚠️ Failed to generate Mission Debrief: {e}").send()
 
 async def handle_qa_loop(hat, team_hats, conversation_log, retry_counts, retry_limit, team_id):
     response_text = conversation_log[-1]['output']
@@ -301,7 +318,9 @@ async def handle_qa_loop(hat, team_hats, conversation_log, retry_counts, retry_l
                 await cl.Message(content=f"🧢 {prev_hat['name']} retry responded:\n{retry_response}").send()
 
                 # Critic re-reviews the new retry
-                critic_response = generate_openai_response(retry_response, hat)
+                critic_id = hat["critics"][0]
+                critic_hat = load_hat(critic_id)
+                critic_response = generate_openai_response(retry_response, critic_hat)
 
                 qa_tags = hat.get('memory_tags', [])
                 add_memory_to_hat(hat['hat_id'], retry_response, role="user", tags=qa_tags, session=cl.user_session)
