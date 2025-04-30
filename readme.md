@@ -1,155 +1,108 @@
-# 🎩 Hat Manager — Multi-Agent AI Orchestration Framework
 
+# MadHatter — Modular AI Agent System for Chainlit  
 > **Microsoft AI Agents Hackathon Submission**  
-> This project was created as a submission for the [Microsoft AI Agents Hackathon](https://microsoft.github.io/AI_Agents_Hackathon). It demonstrates a modular, human-in-the-loop AI agent system designed for research, summarization, and interactive multi-agent workflows.
+> A flexible orchestration framework where every agent wears a "Hat" — equipped with memory, identity, tools, and team logic.
 
 ---
 
-## 🚀 Overview
+## ✨ What It Is
 
-**Hat Manager** is a local-first AI orchestration framework where each "Hat" is an independent AI agent with:
-- A unique identity (`hat_id`, name, role, model, instructions)
-- `base_hat_id` to track template origin
-- Its own vector memory (text + context search)
-- Custom tools (integrations/extensions)
-- Flow logic (for chaining in multi-agent teams)
-- Human-in-the-loop QA approval & retry logic
+MadHatter is a local llm - compatible multi-agent AI framework built with Chainlit. Each “Hat” is a self-contained AI agent with:
 
-Users can **create, edit, wear**, and **compose Hats** into Teams for orchestrated reasoning tasks.
+- 🔐 Unique identity & memory
+- 🛠️ Tooling[WIP] and @mentionable relationships
+- 🧠 Vector search-based memory injection
+- 🧪 QA feedback with retry logic
+- 👤 Human-in-the-loop approval
+- 👥 Team orchestration with custom flow orders
+- 🗓️ Schedule-driven hat switching
 
 ---
 
-## 🎯 Key Features (Current)
+## 🧠 Concept Overview
 
-- **Multi-Agent Team Flow**: Chain Hats into teams like `Planner → Summarizer → Critic`.
-- **Critic QA Loop**: Agents can retry based on Critic feedback (`#REVISION_REQUIRED` / `#APPROVED`).
-- **User Approval**: Manually approve or retry agent output after Critic step.
-- **Dynamic Hat Management**:
-  - Create Hats from prompts (LLM-powered) or from blank templates.
-  - Edit Hats via Chainlit UI or raw JSON.
-  - Auto-generate **unique hat_id** per Hat.
-- **Per-Hat Vector Memory**:
-  - Stores conversations per Hat (with role/timestamp metadata).
-  - Memory search & context injection into prompts.
-  - Commands: `view memories`, `clear memories`, `export memories <hat_id>`, `tag last as <tag>`
-- **Scheduled Hat Switching**:
-  - Automatically switch Hats at specific times.
-- **UI Enhancements**:
-  - Sidebar showing Hats, Teams, and TODOs.
-  - Wear, Edit, and Schedule Hats via action buttons.
-  - JSON view of Hats for easy manual tweaking.
-  - [x] **@Mention Hats**: User calls Hats via @name inline. 4/29/2025
-  - [x] **Memory Tagging**: Allow tag-based retrieval and filtering. tag last as <tag name>
-  - [x] **Agent Reflection**: Agents at the end of critic/qa loop critique and provide feedback and lessons learned.
-  - [x] **Mission Debrief at the end**: Shows agents summary of the conversation at the end
-  - [x] **AGENT MVP AWARD**: We must reward our agents for their hard work!
+| Concept | Description |
+|--------|-------------|
+| **Hats** | Modular agents with name, role, model, instructions, tools, memory, and logic |
+| **Teams** | Chain multiple Hats to solve a goal — `Planner → Researcher → Critic` |
+| **QA Loops** | Critics provide reviews with tags like `#APPROVED`, trigger retries automatically |
+| **Memory** | Injects relevant past conversations into prompts. Taggable, searchable |
+| **Mission Debrief** | Auto-generated summary after each run, includes Agent Reflections |
+| **MVP Awards** | Agents get recognized at the end for highest contribution |
+
+---
+
+## 🔥 Why It’s a Strong Hackathon Contender
+
+### 🧩 **Composable Agent Architecture**
+Each “Hat” is a modular AI agent with its own ID, role, instructions, tools, and memory. You can create Hats from scratch, clone them from templates, or generate them via prompt using OpenAI or local models. Hats can be composed into multi-step teams with flow order control, enabling complex orchestration with zero boilerplate. This plug-and-play model makes it easy to prototype new agent workflows rapidly — perfect for hackathon iteration.
+
+### 🧠 **Per-Agent Memory with Contextual Recall**
+The **Hat Memory System** stores each Hat’s interactions in an isolated vector database using ChromaDB. Memories are tagged, timestamped, and role-annotated, and the top relevant ones are automatically retrieved and injected into prompts for contextual awareness. Hats "remember" past conversations — making them more coherent, consistent, and self-evolving over time.
+
+### 🎭 **@Mentions & Relationship-Aware Reasoning**
+Agents can dynamically trigger other agents using @mentions in natural language. Each Hat can have `relationships` — other Hats it can call by ID — creating an emergent collaboration pattern. For example, a Planner can call @researcher for data mid-response, and their outputs are automatically routed, executed, and logged.
+
+### 🕵️ **Mission Debriefs & Agent Reflections**
+At the end of a team flow, the system generates a full **Mission Debrief** summarizing the outcome, teamwork, and challenges. Each agent then provides its own **AI Reflection**, sharing what it “learned” or how it performed — a novel way to showcase transparency, narrative, and insight in agent-based systems. It also announces an **MVP Agent Award**, giving life and character to the agents.
+
+### 🔄 **Built-In QA Loops with Critic & User Approval**
+Any Hat can opt into a **QA feedback loop**. A designated Critic agent reviews the output, assigns scores, and tags it with `#APPROVED`, `#REVISION_REQUIRED`, or `#REJECTED`. If revision is required, the system retries the agent’s response with updated guidance — all before requiring the human to step in. This simulates Human-in-the-Loop pipelines and ensures quality control is deeply baked into the framework.
+
+### 💡 **Prompt-to-Team: Zero to Agents in Seconds**
+Just describe your goal in plain English. The system uses OpenAI to generate a team of Hats with distinct roles, IDs, instructions, and flow logic. It validates schema, saves them, and shows you a proposed team structure instantly — making it perfect for rapidly spinning up intelligent agents for any domain.
+
+### 👀 **Chainlit UI with Full Control**
+The app features a responsive UI powered by Chainlit with:
+- A persistent **Hat Sidebar** (like ChatGPT’s thread selector)
+- Clickable **action buttons** to wear, edit, or schedule agents
+- A **Hat Editor** with full JSON inspection/modification
+- Real-time commands like `view memories`, `run team`, `create team`, etc.
+- A visual **TODOs list** embedded directly in the interface
+
+---
+
+## 📸 Screenshots & GIFs
+
+| Feature | Suggested Format | File |
+|--------|------------------|------|
+| 🔷 Chainlit UI + Sidebar | Screenshot | `./screenshots/ui_overview.png` |
+| Mentions | Screenshot | `./screenshots/debrief.png` |
+| 🤖 Multi-Agent Team Flow | GIF (team flow w/ approvals) | `./screenshots/team_flow.gif` |
+| 🧠 Viewing Hat Memory | Screenshot | `./screenshots/view_memory.png` |
+| 🏆 Agent MVP Awards | Screenshot | `./screenshots/awards.png` |
+| 📋 Debrief Summary | Screenshot | `./screenshots/debrief.png` |
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Chainlit**: Frontend for AI interactions.
-- **OpenAI API**: LLM backend for responses and team creation.
-- **Ollama**: Local LLM for Hat creation.
-- **ChromaDB**: Per-Hat memory persistence.
-- **Python**: Backend orchestration logic.
-
-
-
-## 🧱 Hat JSON Schema (Normalized)
-
-```json
-{
-  "hat_id": "planner_team_20250429",
-  "base_hat_id": "planner",
-  "name": "AI Planner",
-  "model": "gpt-3.5-turbo",
-  "role": "planner",
-  "instructions": "Create strategic plans for achieving complex goals.",
-  "tools": [],
-  "relationships": [],
-  "team_id": "team_20250429",
-  "flow_order": 1,
-  "qa_loop": true,
-  "critics": ["critic"],
-  "active": true,
-  "memory_tags": ["strategy", "planning"],
-  "retry_limit": 2,
-  "description": "Builds and outlines detailed plans to help teams accomplish goals."
-}
-```
+- **Chainlit** — Conversational UI layer
+- **OpenAI** — LLM backend for smart reasoning. Currently Set to just use gpt-3.5-turbo but planned functionality/schema planned to change the model per hat
+- **Ollama** — Local model generation for Hat creation. Currently disabled for testing. Uses pt-3.5-turbo for consistency
+- **ChromaDB** — Per-agent vector memory persistence
+- **Python** — Orchestration + logic
 
 ---
 
-## 🧑‍💻 Usage Guide
+## 📦 Local Dev Setup
 
-### 1. 🔧 Setup
+> 🧰 [Insert DevContainer / Codespaces Setup Instructions Here]  
+> **`#LOCAL_SETUP_PLACEHOLDER`** ← Replace this comment with your instructions.
+
 ```bash
+# Example basic setup
 git clone https://github.com/yourname/hat-manager.git
 cd hat-manager
 pip install -r requirements.txt
-```
-- Set your **OpenAI API Key** in `.env`:
-```
-OPENAI_API_KEY=sk-xxxxxxxxxxxx
-```
-
-### 2. ▶️ Run the App
-```bash
+OPENAI_API_KEY=sk-xxxxxx  # add to .env
 chainlit run app.py
 ```
-- Visit [http://localhost:8000](http://localhost:8000)
-- Start by typing `help` or use action buttons.
+
 
 ---
 
-## 🧠 Core Concepts
-
-### 🎩 **Hats**:
-- Each Hat = a persona/agent.
-- Fields: `hat_id`, `name`, `role`, `model`, `instructions`, `tools`, `qa_loop`, etc.
-- Manage with: `wear <hat_id>`, `edit <hat_id>`, or action buttons.
-
-### 👥 **Teams**:
-- Compose Hats into sequential workflows.
-- Auto-generate with: `create team`
-- Save and run with: `save team`, `run team <team_id>`
-
-### 🔁 **Critic QA Loop**:
-- Critic Hats can trigger retries for prior Hats.
-- Retry limits configurable per Hat.
-- Supports nested retries + user approval fallback.
-
----
-
-## 📸 Screenshots & GIFs (Suggested)
-
-1. **🖥️ App UI Overview**  
-   _Screenshot:_ Chainlit interface with sidebar + chat.
-
-2. **🎩 Hat Editor UI**  
-   _GIF:_ Editing Hat metadata via UI.
-
-3. **👥 Team Flow Example**  
-   _GIF:_ Planner → Summarizer → Critic → User approval loop.
-
-4. **🧠 Memory Retrieval**  
-   _Screenshot:_ Viewing per-Hat memories.
-
----
-
-## 📋 Example Team Flow
-
-```bash
-run team auto_team_20250426
-```
-
-1. **Summarizing Agent**: Generates summary.
-2. **Critic Agent**: Reviews, may request retry.
-3. **User**: Manually approves or retries if needed.
-
----
-## 📦 Commands Cheat Sheet
+## 🚀 Command Cheatsheet
 
 | Command | Description |
 |--------|-------------|
@@ -176,55 +129,138 @@ run team auto_team_20250426
 | `view missions` | Show saved mission archive files |
 | `help` | Show command help menu |
 | (mentions) `@hat_id` | Trigger another Hat by inline mention |
----
-
-## 🛣️ Future TODOs (Upcoming)
-
-- [ ] **Import Memories**: JSON/text memory ingestion.
-- [ ] **Run Again**: Button to re-run team after approval.
-- [ ] **Flow Visualizer**: Mermaid-based visual team editor.
-- [ ] **Tool Integration**: Add real APIs/tools to Hats.
-- [ ] **Azure AI Integration**: Copilot SDK, AI Foundry.
-- [ ] **AutoGen Integration**: Support agent loops + tools.
 
 ---
 
-## 🙌 Acknowledgments
+## ✅ Features Completed
 
-- Built for the **Microsoft AI Agents Hackathon**.
-- Powered by **Chainlit**, **OpenAI**, **Ollama**, **ChromaDB**.
-
----
-
-## 📝 License
-
-MIT License — Open to extend and build upon.
-
-
+- [x] @Mentions (inline Hat calls)
+- [x] Per-Hat tagging + memory context
+- [x] Full critic-based QA retry loop
+- [x] Post-mission debrief + reflections
+- [x] MVP awards for top contributing agent
+- [x] Dynamic team creation from a single prompt
 
 ---
 
-# 📈 NEXT STEPS:
+## 🛣️ Roadmap & Stretch Goals
 
-### **UI:**
-- Form field freezes after first edit (Chainlit issue). Consider a separate service for modifying Hat metadata or continue JSON pasting.( disbaled feature for now due to many changes in the hat schema during this hackathon period)
-- Build a simple calendar app to run specific agents at specific times with separate memory and context.
+- [ ] 🧠 Import memories from other tools or files
+- [ ] 🔄 “Run Again” button post-approval
+- [ ] 🧭 Visual Flow Builder (Mermaid or Graph UI)
+- [ ] 🧰 Tool integration (APIs, plugins)
+- [ ] 🧠 Memory tagging UI + import/export
+- [ ] 🌩️ Azure AI / AutoGen integration
 
-### **Memory Related:**
-- **Bug**: Each Hat needs a **unique ID**. Consider a DB or session strategy.
-- **Feature**:
-  - Add **metadata tagging** (timestamps, categories).
-  - Provide UI for **manual memory management**.
-  - Support **import/export** of memory snapshots.
+---
 
-### **Scalability:**
-- Add **Async AI calling** to OpenAI or local models.
-- Explore **Azure AI Foundry** or full backend migration to Azure.
+## 🙏 Credits
 
-### ***LLM Robustness***
-- Ollama doesnt generate Unique GUIDS, and currently creates it using a prompt. Need to figure out a better ID and name structure that maintains uniquness for both. 
-- Tagging currently is saved as a csv list of strings rather than a list of strings. WIll reformat memory so that the list is just a clean list
-- Tagging has become alot more difficult. 
+Built for the **Microsoft AI Agents Hackathon** using:
+- [Chainlit](https://docs.chainlit.io)
+- [Ollama](https://ollama.com)
+- [ChromaDB](https://www.trychroma.com)
+- [OpenAI](https://openai.com)
+
+
+DEMO: Link here
+
+## ✅ **Already Implemented But Not Covered fully in Demo**
+
+### ⏰ **1. Scheduled Hat Switching**
+
+- Use `set schedule` to assign specific Hats to activate at defined times.
+    
+- Hats auto-switch when the system clock matches the scheduled time.
+    
+- View your schedule with `view schedule`.
+    
+
+---
+
+### 📦 **2. Base Hat Templates + Cloning**
+
+- Clone a reusable Hat with:
+    
+    ```text
+    new from base <hat_id>
+    ```
+    
+- Automatically generates a unique ID and resets team context.
+    
+- Great for scaling and standardizing agent designs.
+    
+
+---
+
+### 🧠 **3. Tag-Based Memory + Filtering**
+
+- Tag any memory with:
+    
+    ```text
+    tag last as <tag>
+    ```
+    
+- Retrieve memories by tag:
+    
+    ```text
+    view memories <tag>
+    ```
+    
+- Also includes full memory debug and clearing via:
+    
+    ```text
+    debug memories
+    clear memories
+    ```
+    
+
+---
+
+### 🔁 **4. QA Loop via Command**
+
+- Use:
+    
+    ```text
+    add qa to <hat_id>
+    ```
+    
+- Automatically:
+    
+    - Enables QA loop
+        
+    - Adds a critic to the Hat's config
+        
+    - Clones and inserts the Critic Hat into the team if needed
+        
+
+---
+
+## 🛠️ **Planned / Not Yet Implemented**
+
+### 🔄 **1. Parallel Execution for Same `flow_order`**
+
+- When multiple Hats share the same `flow_order`, they will run concurrently.
+    
+- Example: All Hats with `flow_order: 2` process in parallel.
+
+### 📊 **2. Flow Chart Generator**
+
+- Will visualize team structure based on `flow_order`, roles, and relationships.
+    
+- Planned implementation using Mermaid.js or another flowchart engine.
+    
+###  3. ***Specific Tools Integration***
+
+- Tools currently not implemented yet, but is planned and already handled in the schema. 
+
+###  4. **Copilot Extension**
+
+- Would love to give the Copilot SDK and other Agent Frameworks the option to wear a hat!
+
+###  5. **Dynamic LLM usage**
+- Switch Between different local, or external models and allow each hat to be a different model or agent at it's based
+- My current setup is hybrid. I create hats using ollama locally, and then the schema is used with OPEN AI. 
 
 ------------------------------------------------------------------------------------------ 
 
@@ -288,7 +324,7 @@ The Hat Memory System integrates local vector databases (ChromaDB) into individu
 > This memory system enables **personalized and evolving AI** by ensuring each Hat retains and utilizes past context intelligently.
 
 ------------------------------------------------------------------------------------------ 
-### 📝 **Summary: How to Integrate Critic to Any Agent for Retry Loops**
+# 📝 **Summary: How to Integrate Critic to Any Agent for Retry Loops**
 
 Here’s a concise step-by-step **guide** on how you integrated the **Critic Agent** with **any Hat** to enable **QA loops** (retry logic), **assuming Critic is hardcoded** for now.
 
