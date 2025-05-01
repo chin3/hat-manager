@@ -47,7 +47,7 @@ Agents can dynamically trigger other agents using @mentions in natural language.
 At the end of a team flow, the system generates a full **Mission Debrief** summarizing the outcome, teamwork, and challenges. Each agent then provides its own **AI Reflection**, sharing what it “learned” or how it performed — a novel way to showcase transparency, narrative, and insight in agent-based systems. It also announces an **MVP Agent Award**, giving life and character to the agents.
 
 ### 🔄 **Built-In QA Loops with Critic & User Approval**
-Any Hat can opt into a **QA feedback loop**. A designated Critic agent reviews the output, assigns scores, and tags it with `#APPROVED`, `#REVISION_REQUIRED`, or `#REJECTED`. If revision is required, the system retries the agent’s response with updated guidance — all before requiring the human to step in. This simulates Human-in-the-Loop pipelines and ensures quality control is deeply baked into the framework.
+Any Hat can opt into a **QA feedback loop**. A designated Critic agent reviews the output, assigns scores, and tags it with `#APPROVED`, `#REVISION_REQUIRED`. If revision is required, the system retries the agent’s response with updated guidance — all before requiring the human to step in. This simulates Human-in-the-Loop pipelines and ensures quality control is deeply baked into the framework.
 
 ### 💡 **Prompt-to-Team: Zero to Agents in Seconds**
 Just describe your goal in plain English. The system uses OpenAI to generate a team of Hats with distinct roles, IDs, instructions, and flow logic. It validates schema, saves them, and shows you a proposed team structure instantly — making it perfect for rapidly spinning up intelligent agents for any domain.
